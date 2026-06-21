@@ -103,6 +103,19 @@ importers:
         specifier: ^2.0.0
         version: 2.1.9(@types/node@26.0.0)
 
+  packages/assertions:
+    dependencies:
+      '@flowprobe/core':
+        specifier: workspace:*
+        version: link:../core
+    devDependencies:
+      typescript:
+        specifier: ^5.5.0
+        version: 5.9.3
+      vitest:
+        specifier: ^2.0.0
+        version: 2.1.9(@types/node@26.0.0)
+
   packages/cli:
     dependencies:
       '@flowprobe/core':
