@@ -46,4 +46,20 @@ describe('reporters', () => {
     expect(html).toContain('2 passed')
     expect(html).toContain('1 failed')
   })
+
+  it('generateHtml escapes special chars in error messages', () => {
+    const resultWithXss: RunResult = {
+      ...sampleResult,
+      flows: [{
+        ...sampleResult.flows[0],
+        steps: [
+          { id: 'step-1', type: 'http-assert', passed: false, durationMs: 100,
+            error: 'Expected body to contain <order id="1">' }
+        ]
+      }]
+    }
+    const html = generateHtml(resultWithXss)
+    expect(html).not.toContain('<order id="1">')
+    expect(html).toContain('&lt;order id=&quot;1&quot;&gt;')
+  })
 })
