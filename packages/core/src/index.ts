@@ -11,3 +11,5 @@ export type {
   MessageAssertStep,
   Assertion,
 } from './schema.js'
+export { interpolate } from './interpolator.js'
+export type { InterpolationContext, StepResult } from './interpolator.js'
