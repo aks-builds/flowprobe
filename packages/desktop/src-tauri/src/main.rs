@@ -2,5 +2,5 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 fn main() {
-    packagesdesktop_lib::run()
+    flowprobe_desktop_lib::run()
 }

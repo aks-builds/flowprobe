@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "packagesdesktop",
+  "productName": "FlowProbe",
   "version": "0.1.0",
-  "identifier": "com.adityakumarsingh.packagesdesktop",
+  "identifier": "dev.flowprobe.app",
   "build": {
     "beforeDevCommand": "pnpm dev",
     "devUrl": "http://localhost:1420",
@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "packagesdesktop",
+        "title": "FlowProbe",
         "width": 800,
         "height": 600
       }
