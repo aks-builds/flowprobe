@@ -8,8 +8,15 @@ export async function validate(collectionPath: string | undefined): Promise<numb
     console.error('Usage: flowprobe validate <path.flowprobe.json>')
     return 2
   }
+  let raw: unknown
   try {
-    const raw = JSON.parse(readFileSync(resolve(collectionPath), 'utf-8'))
+    raw = JSON.parse(readFileSync(resolve(collectionPath), 'utf-8'))
+  } catch (err) {
+    console.error(`Error: cannot read collection file: ${collectionPath}`)
+    return 2
+  }
+
+  try {
     const collection = parseCollection(raw)
     const totalSteps = collection.flows.reduce((n, f) => n + f.steps.length, 0)
     console.log(`✓ Valid collection: ${collection.name} — ${collection.flows.length} flows, ${totalSteps} steps`)

@@ -6,7 +6,7 @@ const { values, positionals } = parseArgs({
   args: process.argv.slice(2),
   options: {
     env: { type: 'string' },
-    reporter: { type: 'string', default: 'console' },
+    reporter: { type: 'string', default: 'json' },
     output: { type: 'string' },
     flow: { type: 'string' },
     broker: { type: 'string', default: 'kafka' },
