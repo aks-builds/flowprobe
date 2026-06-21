@@ -1,0 +1,9 @@
+name: Auto Approve
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+jobs:
+  auto-approve:
+    if: github.actor == 'aks-builds'
+    uses: aks-builds/.github/.github/workflows/auto-approve.yml@master
+    secrets: inherit
