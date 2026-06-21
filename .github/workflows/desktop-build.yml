@@ -1,0 +1,76 @@
+# .github/workflows/desktop-build.yml
+# Builds Tauri desktop binaries (.msi, .dmg, .AppImage) on GitHub release creation.
+#
+# Signing key setup:
+#   Generate signing key: cargo tauri signer generate -w ~/.tauri/flowprobe.key
+#   Add the public key to packages/desktop/src-tauri/tauri.conf.json under plugins.updater.pubkey
+#   Add the private key as a GitHub secret: gh secret set TAURI_SIGNING_PRIVATE_KEY --repo aks-builds/flowprobe
+
+name: Desktop Build
+
+on:
+  release:
+    types: [created]
+  workflow_dispatch:
+
+jobs:
+  build-tauri:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-22.04
+            target: x86_64-unknown-linux-gnu
+            artifact: '*.AppImage'
+          - os: macos-latest
+            target: aarch64-apple-darwin
+            artifact: '*.dmg'
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            artifact: '*.msi'
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Install Linux system dependencies
+        if: matrix.os == 'ubuntu-22.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libgtk-3-dev \
+            libwebkit2gtk-4.1-dev \
+            libappindicator3-dev \
+            librsvg2-dev \
+            patchelf
+
+      - name: Install Node dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build Tauri app
+        uses: tauri-apps/tauri-action@v0
+        with:
+          projectPath: packages/desktop
+          tagName: ${{ github.event.release.tag_name }}
+          releaseName: FlowProbe ${{ github.event.release.tag_name }}
+          releaseBody: See CHANGELOG.md for details
+          releaseDraft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
