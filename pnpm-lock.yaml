@@ -171,6 +171,9 @@ importers:
 
   packages/desktop:
     dependencies:
+      '@flowprobe/core':
+        specifier: workspace:*
+        version: link:../core
       '@tauri-apps/api':
         specifier: ^2
         version: 2.11.1
