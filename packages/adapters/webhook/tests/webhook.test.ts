@@ -66,14 +66,29 @@ describe('WebhookAdapter', () => {
 
   it('consume resolves with parsed JSON payload on POST', async () => {
     const adapter = new WebhookAdapter()
-    const consumePromise = adapter.consume('/webhook', 'fp-group', 5000)
-    // wait a tick for server to start listening
-    await new Promise<void>((r) => setTimeout(r, 50))
+    const payload = { event: 'order.created', orderId: 'ord_001' }
 
-    // Need to find the port the server is listening on — use a dummy approach:
-    // We re-use the consume promise which internally opens a server on port 0.
-    // Instead, test consume with a known port.
-    await adapter.close()
+    // Start consuming first (it creates the server and starts listening)
+    const consumePromise = adapter.consume('/webhook', '', 3000)
+
+    // Small delay to let server start and bind to port
+    await new Promise(r => setTimeout(r, 20))
+
+    // Discover the port the server is listening on
+    const port = (adapter as unknown as { server: { address(): { port: number } | null } }).server?.address()?.port
+
+    // POST to the server
+    const res = await fetch(`http://localhost:${port}/webhook`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(payload),
+    })
+    expect(res.status).toBe(200)
+
+    // The consume promise should now resolve with the payload
+    const received = await consumePromise
+    expect((received as typeof payload).event).toBe('order.created')
+    expect((received as typeof payload).orderId).toBe('ord_001')
   })
 
   it('consume resolves with the posted body on a known port', async () => {
