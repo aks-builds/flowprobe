@@ -1,6 +1,7 @@
 // packages/adapters/webhook/src/index.ts
 import http from 'node:http'
-import { createHmac } from 'node:crypto'
+import https from 'node:https'
+import { createHmac, timingSafeEqual } from 'node:crypto'
 import type { BrokerAdapter } from '@flowprobe/core'
 
 export type WebhookConfig = { hmacSecret?: string; port?: number }
@@ -23,14 +24,16 @@ export class WebhookAdapter implements BrokerAdapter {
     }
     return new Promise((resolve, reject) => {
       const u = new URL(url)
+      const protocol = u.protocol === 'https:' ? https : http
+      const port = u.port || (u.protocol === 'https:' ? 443 : 80)
       const options: http.RequestOptions = {
         hostname: u.hostname,
-        port: u.port || 80,
+        port,
         path: u.pathname + u.search,
         method: 'POST',
         headers: extraHeaders,
       }
-      const req = http.request(options, (res) => {
+      const req = protocol.request(options, (res) => {
         // Drain the response so the socket is freed
         res.resume()
         resolve({ status: res.statusCode ?? 0 })
@@ -65,7 +68,12 @@ export class WebhookAdapter implements BrokerAdapter {
           if (this.config.hmacSecret) {
             const sig = req.headers['x-flowprobe-signature'] ?? ''
             const expected = 'sha256=' + createHmac('sha256', this.config.hmacSecret!).update(body).digest('hex')
-            if (sig !== expected) {
+            const sigBuffer = Buffer.from(sig as string, 'utf-8')
+            const expectedBuffer = Buffer.from(expected, 'utf-8')
+            const match =
+              sigBuffer.length === expectedBuffer.length &&
+              timingSafeEqual(sigBuffer, expectedBuffer)
+            if (!match) {
               res.writeHead(401)
               res.end()
               settle(() => {

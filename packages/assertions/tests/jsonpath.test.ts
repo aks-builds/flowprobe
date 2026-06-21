@@ -36,4 +36,11 @@ describe('evaluateJsonPath', () => {
     const r = evaluateJsonPath(payload, { type: 'jsonpath', path: '$.item', operator: 'neq', expected: { sku: 'SKU-001' } })
     expect(r.passed).toBe(false)
   })
+
+  it('matches operator handles invalid regex gracefully', () => {
+    const payload = { version: '1.0.0' }
+    const r = evaluateJsonPath(payload, { type: 'jsonpath', path: '$.version', operator: 'matches', expected: '(' })
+    expect(r.passed).toBe(false)
+    // Should not throw
+  })
 })

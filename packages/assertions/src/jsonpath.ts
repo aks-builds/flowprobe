@@ -33,7 +33,12 @@ function compare(actual: unknown, operator: Assertion['operator'], expected: unk
     case 'gt': return Number(actual) > Number(expected)
     case 'lt': return Number(actual) < Number(expected)
     case 'contains': return String(actual).includes(String(expected))
-    case 'matches': return new RegExp(String(expected)).test(String(actual))
+    case 'matches':
+      try {
+        return new RegExp(String(expected)).test(String(actual))
+      } catch {
+        return false
+      }
     case 'exists': return actual !== undefined && actual !== null
     case 'type': return typeof actual === expected
     default: return false
@@ -45,6 +50,16 @@ export function evaluateJsonPath(payload: unknown, assertion: Assertion): Assert
     return { passed: false, expected: assertion.expected, actual: null, error: 'assertion.path is required for jsonpath' }
   }
   const actual = getValueByPath(payload, assertion.path)
-  const passed = compare(actual, assertion.operator ?? 'eq', assertion.expected)
-  return { passed, expected: assertion.expected, actual, path: assertion.path }
+  try {
+    const passed = compare(actual, assertion.operator ?? 'eq', assertion.expected)
+    return { passed, expected: assertion.expected, actual, path: assertion.path }
+  } catch (err) {
+    return {
+      passed: false,
+      expected: assertion.expected,
+      actual,
+      path: assertion.path,
+      error: err instanceof Error ? err.message : String(err),
+    }
+  }
 }

@@ -53,21 +53,26 @@ export class KafkaAdapter implements BrokerAdapter {
     this.consumer = consumer
     await consumer.connect()
     await consumer.subscribe({ topic, fromBeginning: false })
+
     return new Promise((resolve, reject) => {
       const timer = setTimeout(async () => {
-        await consumer.disconnect()
+        await consumer.disconnect().catch(() => {})
         reject(new Error(`consume timeout after ${timeoutMs}ms waiting for message on ${topic}`))
       }, timeoutMs)
+
       consumer.run({
         eachMessage: async ({ message }) => {
           clearTimeout(timer)
-          await consumer.disconnect()
+          await consumer.disconnect().catch(() => {})
           try {
             resolve(JSON.parse(message.value?.toString() ?? 'null'))
           } catch {
             resolve(message.value?.toString())
           }
         },
+      }).catch(err => {
+        clearTimeout(timer)
+        reject(err)
       })
     })
   }

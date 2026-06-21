@@ -5,9 +5,15 @@ import { interpolate } from './interpolator.js'
 import type { Collection, Flow, Step } from './schema.js'
 import type { InterpolationContext } from './interpolator.js'
 
+export type AssertionHandler = (
+  step: Step,
+  ctx: InterpolationContext
+) => Promise<{ passed: boolean; error?: string; payload?: unknown }>
+
 export type RunOptions = {
   vars: Record<string, string>
   flowId?: string
+  assertionHandler?: AssertionHandler
 }
 
 export type StepRunResult = {
@@ -43,12 +49,14 @@ export interface BrokerAdapter {
 
 export class FlowRunner extends EventEmitter {
   private adapterRegistry = new Map<string, BrokerAdapter>()
+  private assertionHandler: AssertionHandler | undefined
 
   setAdapterRegistry(registry: Map<string, BrokerAdapter>): void {
     this.adapterRegistry = registry
   }
 
   async run(collection: Collection, opts: RunOptions): Promise<RunResult> {
+    this.assertionHandler = opts.assertionHandler
     const runId = randomUUID()
     const startTime = Date.now()
     const flows = opts.flowId
@@ -163,9 +171,28 @@ export class FlowRunner extends EventEmitter {
         }
       }
 
-      // http-assert, db-assert, message-assert are handled by the assertion package.
-      // They should be wired in via a custom adapter registered under the step type name,
-      // or the host (CLI / desktop) handles them before calling the runner.
+      // http-assert, db-assert, message-assert are delegated to the assertionHandler
+      if (
+        interpolatedStep.type === 'http-assert' ||
+        interpolatedStep.type === 'db-assert' ||
+        interpolatedStep.type === 'message-assert'
+      ) {
+        if (!this.assertionHandler) {
+          throw new Error(
+            `Step type '${interpolatedStep.type}' requires an assertionHandler in RunOptions`
+          )
+        }
+        const result = await this.assertionHandler(interpolatedStep, ctx)
+        return {
+          id: step.id,
+          type: step.type,
+          passed: result.passed,
+          durationMs: Date.now() - start,
+          error: result.error,
+          payload: result.payload,
+        }
+      }
+
       throw new Error(
         `Step type '${(interpolatedStep as Step).type}' is not handled by the runner — ` +
           `register an assertion adapter or handle this step type externally`

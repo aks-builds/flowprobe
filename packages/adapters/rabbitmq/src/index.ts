@@ -36,34 +36,27 @@ export class RabbitAdapter implements BrokerAdapter {
     await ch.assertQueue(queue, { durable: true })
 
     return new Promise((resolve, reject) => {
-      let settled = false
-      const settle = (fn: () => void) => {
-        if (settled) return
-        settled = true
-        fn()
-      }
+      let consumerTag: string | null = null
 
       const timer = setTimeout(() => {
-        settle(() => reject(new Error(`consume timeout after ${timeoutMs}ms on queue ${queue}`)))
+        if (consumerTag) ch.cancel(consumerTag).catch(() => {})
+        reject(new Error(`consume timeout after ${timeoutMs}ms on queue ${queue}`))
       }, timeoutMs)
 
       ch.consume(queue, (msg) => {
         if (!msg) return
         clearTimeout(timer)
-        settle(() => {
-          try {
-            resolve(JSON.parse(msg.content.toString()))
-          } catch {
-            resolve(msg.content.toString())
-          }
-        })
-      }).then(({ consumerTag }) => {
-        // cancel consumer after message is received (best-effort)
-        if (settled) {
-          ch.cancel(consumerTag).catch(() => {})
+        if (consumerTag) ch.cancel(consumerTag).catch(() => {})
+        try {
+          resolve(JSON.parse(msg.content.toString()))
+        } catch {
+          resolve(msg.content.toString())
         }
+      }).then(({ consumerTag: tag }) => {
+        consumerTag = tag
       }).catch(() => {
-        settle(() => reject(new Error(`Failed to start consumer on queue ${queue}`)))
+        clearTimeout(timer)
+        reject(new Error(`Failed to start consumer on queue ${queue}`))
       })
     })
   }

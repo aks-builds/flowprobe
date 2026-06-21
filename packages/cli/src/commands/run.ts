@@ -8,7 +8,8 @@ import {
   generateJson,
   generateHtml,
 } from '@flowprobe/core'
-import type { RunResult, BrokerAdapter } from '@flowprobe/core'
+import type { RunResult, BrokerAdapter, AssertionHandler } from '@flowprobe/core'
+import { evaluateHttp } from '@flowprobe/assertions'
 
 /**
  * Build an adapter registry from environment variables.
@@ -63,6 +64,24 @@ async function buildAdapterRegistry(): Promise<Map<string, BrokerAdapter>> {
   return registry
 }
 
+const assertionHandler: AssertionHandler = async (step, ctx) => {
+  if (step.type === 'http-assert') {
+    const results = await evaluateHttp(step, ctx)
+    const failed = results.find(r => !r.passed)
+    return {
+      passed: results.every(r => r.passed),
+      error: failed
+        ? `${failed.path ?? ''}: expected ${JSON.stringify(failed.expected)}, got ${JSON.stringify(failed.actual)}`
+        : undefined,
+      payload: results,
+    }
+  }
+  return {
+    passed: false,
+    error: `${step.type} step requires runtime context (db connection, etc.) not available in CLI`,
+  }
+}
+
 export async function run(
   collectionPath: string | undefined,
   opts: Record<string, string | boolean | string[] | undefined>
@@ -112,7 +131,7 @@ export async function run(
 
   let result: RunResult
   try {
-    result = await runner.run(collection, { vars, flowId: opts['flow'] as string | undefined })
+    result = await runner.run(collection, { vars, flowId: opts['flow'] as string | undefined, assertionHandler })
   } catch (err) {
     console.error(`Run error: ${err instanceof Error ? err.message : err}`)
     return 2

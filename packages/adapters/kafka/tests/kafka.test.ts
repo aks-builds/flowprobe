@@ -8,13 +8,16 @@ vi.mock('kafkajs', () => {
     disconnect: vi.fn(),
   }
   const mockConsumer = {
-    connect: vi.fn(),
-    subscribe: vi.fn(),
+    connect: vi.fn().mockResolvedValue(undefined),
+    subscribe: vi.fn().mockResolvedValue(undefined),
     run: vi.fn().mockImplementation(({ eachMessage }) => {
-      eachMessage({ message: { value: Buffer.from('{"event":"order.created"}') } })
+      // Delay eachMessage so the Promise constructor finishes registering first
+      Promise.resolve().then(() =>
+        eachMessage({ message: { value: Buffer.from('{"event":"order.created"}') } })
+      )
       return Promise.resolve()
     }),
-    disconnect: vi.fn(),
+    disconnect: vi.fn().mockResolvedValue(undefined),
   }
   const Kafka = vi.fn().mockImplementation(() => ({
     producer: () => mockProducer,
