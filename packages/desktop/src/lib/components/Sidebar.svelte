@@ -1,12 +1,15 @@
 <script lang="ts">
-  import { createEventDispatcher } from 'svelte'
+  import { createEventDispatcher, onMount, onDestroy } from 'svelte'
+  import { invoke } from '@tauri-apps/api/core'
   import type { Collection } from '@flowprobe/core'
+  import { brokerStatusStore } from '../stores/collection.js'
+  import BrokerConfigPanel from './BrokerConfigPanel.svelte'
 
   /** List of loaded collections to display. */
   export let collections: Collection[] = []
 
-  /** Broker names to display in a secondary section (optional). */
-  export let brokers: string[] = []
+  /** Broker objects to display in a secondary section (optional). */
+  export let brokers: { id: string }[] = []
 
   /** Currently active collection name. */
   export let activeCollectionId: string | null = null
@@ -21,6 +24,12 @@
   // Track which collections are expanded
   let expanded: Record<string, boolean> = {}
 
+  // Which broker config panel is open
+  let activeBrokerConfig: string | null = null
+
+  // Ping interval handle
+  let pingInterval: ReturnType<typeof setInterval> | null = null
+
   function toggleCollection(name: string) {
     expanded[name] = !expanded[name]
   }
@@ -28,6 +37,34 @@
   function selectFlow(collectionName: string, flowId: string) {
     dispatch('select', { collectionName, flowId })
   }
+
+  function toggleBrokerConfig(brokerId: string) {
+    activeBrokerConfig = activeBrokerConfig === brokerId ? null : brokerId
+  }
+
+  async function pingBrokers() {
+    for (const broker of brokers) {
+      const current = $brokerStatusStore.get(broker.id)
+      if (!current?.connected) continue
+      try {
+        const latencyMs = await invoke<number>('ping_broker', { id: broker.id })
+        brokerStatusStore.set(broker.id, { ...current, latencyMs })
+      } catch {
+        // ignore ping failures silently — broker may have disconnected
+      }
+    }
+  }
+
+  onMount(() => {
+    pingInterval = setInterval(pingBrokers, 5000)
+  })
+
+  onDestroy(() => {
+    if (pingInterval !== null) {
+      clearInterval(pingInterval)
+      pingInterval = null
+    }
+  })
 </script>
 
 <aside class="sidebar">
@@ -83,10 +120,38 @@
       <span class="section-label">Brokers</span>
     </div>
     <ul class="broker-list">
-      {#each brokers as broker (broker)}
-        <li class="broker-row">
-          <span class="broker-dot"></span>
-          <span class="broker-name">{broker}</span>
+      {#each brokers as broker (broker.id)}
+        <li>
+          <div
+            class="broker-row"
+            role="button"
+            tabindex="0"
+            on:click={() => toggleBrokerConfig(broker.id)}
+            on:keydown={e => e.key === 'Enter' && toggleBrokerConfig(broker.id)}
+          >
+            <span
+              class="b-dot"
+              class:online={$brokerStatusStore.get(broker.id)?.connected}
+              class:connecting={$brokerStatusStore.get(broker.id)?.connecting}
+              class:error={!!$brokerStatusStore.get(broker.id)?.error}
+            ></span>
+            <span class="broker-name">{broker.id}</span>
+            {#if $brokerStatusStore.get(broker.id)?.latencyMs != null}
+              <span
+                class="broker-latency"
+                class:warn={($brokerStatusStore.get(broker.id)?.latencyMs ?? 0) > 500}
+                class:crit={($brokerStatusStore.get(broker.id)?.latencyMs ?? 0) > 2000}
+              >
+                {$brokerStatusStore.get(broker.id)?.latencyMs}ms
+              </span>
+            {/if}
+            {#if $brokerStatusStore.get(broker.id)?.error}
+              <span class="broker-err-dot" title={$brokerStatusStore.get(broker.id)?.error}>⚠</span>
+            {/if}
+          </div>
+          {#if activeBrokerConfig === broker.id}
+            <BrokerConfigPanel brokerId={broker.id} on:close={() => (activeBrokerConfig = null)} />
+          {/if}
         </li>
       {/each}
     </ul>
@@ -97,7 +162,7 @@
   .sidebar {
     width: 220px;
     flex-shrink: 0;
-    background: var(--surface);
+    background: var(--sidebar-bg);
     border-right: 1px solid var(--border);
     display: flex;
     flex-direction: column;
@@ -257,19 +322,73 @@
     padding: 6px 12px;
     font-size: var(--text-sm);
     color: var(--text-secondary);
+    cursor: pointer;
+    transition: background var(--dur-fast);
+    border-radius: var(--radius-sm);
   }
 
-  .broker-dot {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: var(--success);
-    flex-shrink: 0;
+  .broker-row:hover {
+    background: var(--bg);
   }
 
   .broker-name {
+    flex: 1;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+
+  /* -- Broker status dot -- */
+  .b-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    background: var(--conn-offline);
+    transition: background var(--dur-fast);
+  }
+
+  .b-dot.online {
+    background: var(--conn-online);
+  }
+
+  .b-dot.connecting {
+    background: var(--conn-connecting);
+    animation: b-pulse 1s ease-in-out infinite;
+  }
+
+  .b-dot.error {
+    background: var(--conn-error);
+  }
+
+  @keyframes b-pulse {
+    0%,
+    100% {
+      box-shadow: 0 0 0 0 rgba(217, 119, 6, 0.4);
+    }
+    50% {
+      box-shadow: 0 0 0 5px rgba(217, 119, 6, 0);
+    }
+  }
+
+  .broker-latency {
+    font-size: 9px;
+    color: var(--text-muted);
+    margin-left: auto;
+    font-family: var(--font-mono);
+  }
+
+  .broker-latency.warn {
+    color: var(--warning);
+  }
+
+  .broker-latency.crit {
+    color: var(--error);
+  }
+
+  .broker-err-dot {
+    font-size: 10px;
+    color: var(--warning);
+    cursor: pointer;
   }
 </style>
