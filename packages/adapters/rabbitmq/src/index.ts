@@ -1,11 +1,11 @@
 // packages/adapters/rabbitmq/src/index.ts
-import amqplib, { type Connection, type Channel } from 'amqplib'
+import amqplib, { type ChannelModel, type Channel } from 'amqplib'
 import type { BrokerAdapter } from '@flowprobe/core'
 
 export type RabbitConfig = { url: string; tls?: boolean }
 
 export class RabbitAdapter implements BrokerAdapter {
-  private conn: Connection | null = null
+  private conn: ChannelModel | null = null
   private channel: Channel | null = null
 
   constructor(private config: RabbitConfig) {}
