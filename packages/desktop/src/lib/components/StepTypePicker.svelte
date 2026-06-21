@@ -24,6 +24,7 @@
     s.label.toLowerCase().includes(query.toLowerCase()) ||
     s.type.includes(query.toLowerCase())
   )
+  $: query, (highlighted = 0)
 
   function handleKey(e: KeyboardEvent) {
     if (e.key === 'ArrowDown') { e.preventDefault(); highlighted = Math.min(highlighted + 1, filtered.length - 1) }
@@ -44,13 +45,13 @@
   />
   <ul class="list" role="listbox">
     {#each filtered as step, i (step.type)}
-      <!-- svelte-ignore a11y-click-events-have-key-events -->
       <li
         class="item"
         class:highlighted={i === highlighted}
         role="option"
         aria-selected={i === highlighted}
         on:click={() => dispatch('pick', step.type)}
+        on:keydown={e => e.key === 'Enter' && dispatch('pick', step.type)}
         on:mouseenter={() => highlighted = i}
         tabindex="-1"
       >
