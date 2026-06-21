@@ -1,8 +1,10 @@
 pub mod commands {
     pub mod broker;
+    pub mod run;
 }
 
 use commands::broker::{connect_broker, disconnect_broker, ping_broker, BrokerRegistry};
+use commands::run::run_collection;
 
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 #[tauri::command]
@@ -20,6 +22,7 @@ pub fn run() {
             connect_broker,
             disconnect_broker,
             ping_broker,
+            run_collection,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
