@@ -13,3 +13,5 @@ export type {
 } from './schema.js'
 export { interpolate } from './interpolator.js'
 export type { InterpolationContext, StepResult } from './interpolator.js'
+export { FlowRunner } from './runner.js'
+export type { RunOptions, RunResult, FlowRunResult, StepRunResult, BrokerAdapter } from './runner.js'
