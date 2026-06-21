@@ -1,0 +1,8 @@
+# Use the GNU toolchain with MinGW64 — avoids MSVC linker (link.exe) requirement.
+# This is a workspace-level override so all packages in this repo share it.
+[build]
+target = "x86_64-pc-windows-gnu"
+
+[target.x86_64-pc-windows-gnu]
+linker = "C:/ProgramData/mingw64/mingw64/bin/x86_64-w64-mingw32-gcc.exe"
+ar = "C:/ProgramData/mingw64/mingw64/bin/x86_64-w64-mingw32-ar.exe"
