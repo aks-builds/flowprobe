@@ -29,7 +29,7 @@ function getValueByPath(obj: unknown, path: string): unknown {
 function compare(actual: unknown, operator: Assertion['operator'], expected: unknown): boolean {
   switch (operator) {
     case 'eq': return actual === expected || JSON.stringify(actual) === JSON.stringify(expected)
-    case 'neq': return actual !== expected
+    case 'neq': return !(actual === expected || JSON.stringify(actual) === JSON.stringify(expected))
     case 'gt': return Number(actual) > Number(expected)
     case 'lt': return Number(actual) < Number(expected)
     case 'contains': return String(actual).includes(String(expected))

@@ -30,4 +30,10 @@ describe('evaluateJsonPath', () => {
     const r = evaluateJsonPath(payload, { type: 'jsonpath', path: '$.quantity', operator: 'gt', expected: 3 })
     expect(r.passed).toBe(true)
   })
+
+  it('neq fails when objects are deeply equal', () => {
+    const payload = { item: { sku: 'SKU-001' } }
+    const r = evaluateJsonPath(payload, { type: 'jsonpath', path: '$.item', operator: 'neq', expected: { sku: 'SKU-001' } })
+    expect(r.passed).toBe(false)
+  })
 })
