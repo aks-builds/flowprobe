@@ -1,20 +1,27 @@
 {
   "name": "flowprobe",
   "version": "0.1.0",
+  "description": "The Postman for async architectures — event-driven system testing",
   "type": "module",
-  "main": "./dist/index.js",
   "bin": { "flowprobe": "./dist/index.js" },
+  "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
-  "exports": { ".": { "import": "./dist/index.js", "types": "./dist/index.d.ts" } },
   "scripts": {
     "build": "tsc",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "start": "node dist/index.js"
   },
   "dependencies": {
-    "@flowprobe/core": "workspace:*"
+    "@flowprobe/core": "workspace:*",
+    "@flowprobe/adapter-kafka": "workspace:*",
+    "@flowprobe/adapter-rabbitmq": "workspace:*",
+    "@flowprobe/adapter-sns-sqs": "workspace:*",
+    "@flowprobe/adapter-webhook": "workspace:*",
+    "@flowprobe/adapter-websocket": "workspace:*",
+    "@flowprobe/assertions": "workspace:*"
   },
   "devDependencies": {
+    "@types/node": "^22.0.0",
     "typescript": "^5.5.0",
     "vitest": "^2.0.0"
   }
