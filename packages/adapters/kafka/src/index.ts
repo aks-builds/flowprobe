@@ -38,9 +38,7 @@ export class KafkaAdapter implements BrokerAdapter {
       await this.producer.connect()
     }
     const value = typeof payload === 'string' ? payload : JSON.stringify(payload)
-    const kafkaHeaders = headers
-      ? Object.entries(headers).map(([key, value]) => ({ [key]: value }))
-      : undefined
+    const kafkaHeaders = headers ?? undefined
     const results = await this.producer.send({
       topic,
       messages: [{ value, headers: kafkaHeaders }],
@@ -51,18 +49,16 @@ export class KafkaAdapter implements BrokerAdapter {
   }
 
   async consume(topic: string, groupId: string, timeoutMs: number): Promise<unknown> {
-    return new Promise(async (resolve, reject) => {
-      const consumer = this.kafka.consumer({ groupId })
-      this.consumer = consumer
-      await consumer.connect()
-      await consumer.subscribe({ topic, fromBeginning: false })
-
+    const consumer = this.kafka.consumer({ groupId })
+    this.consumer = consumer
+    await consumer.connect()
+    await consumer.subscribe({ topic, fromBeginning: false })
+    return new Promise((resolve, reject) => {
       const timer = setTimeout(async () => {
         await consumer.disconnect()
         reject(new Error(`consume timeout after ${timeoutMs}ms waiting for message on ${topic}`))
       }, timeoutMs)
-
-      await consumer.run({
+      consumer.run({
         eachMessage: async ({ message }) => {
           clearTimeout(timer)
           await consumer.disconnect()
