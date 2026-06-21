@@ -57,6 +57,16 @@
   --dur-fast: 150ms;
   --dur-normal: 200ms;
   --dur-slow: 300ms;
+
+  /* Sidebar */
+  --sidebar-bg: #f4f6f8;
+
+  /* Broker connection dot colors */
+  --conn-online: #16a34a;
+  --conn-connecting: #d97706;
+  --conn-error: #dc2626;
+  --conn-offline: #cbd5e1;
+  --conn-running: #3b82f6;
 }
 
 @media (prefers-reduced-motion: reduce) {
