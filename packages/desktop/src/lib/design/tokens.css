@@ -85,3 +85,23 @@
     --dur-slow: 0ms;
   }
 }
+
+/* ─── Light theme overrides ─── */
+[data-theme="light"] {
+  --bg:           #f4f6fb;
+  --surface:      #ffffff;
+  --surface2:     #f8f9fc;
+  --border:       #e8eaf0;
+  --border2:      #dde1ea;
+  --text-primary: #1e293b;
+  --text-secondary:#475569;
+  --text-muted:   #94a3b8;
+  --sidebar-bg:   #f1f5f9;
+  --titlebar-bg:  #ffffff;
+  --accent:       #4f46e5;
+  --accent-hover: #4338ca;
+  --conn-online:  #16a34a;
+  --conn-connecting:#d97706;
+  --conn-error:   #dc2626;
+  --conn-offline: #94a3b8;
+}
