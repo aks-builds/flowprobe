@@ -16,6 +16,9 @@
     'command-palette': 'Ctrl+K',
   }
 
+  const isMac = typeof navigator !== 'undefined' && /Mac/.test(navigator.platform)
+  const paletteShortcut = isMac ? '⌘K' : 'Ctrl+K'
+
   let query = ''
   let highlighted = 0
   let inputEl: HTMLInputElement
@@ -27,10 +30,10 @@
     ...collections.flatMap(c =>
       c.flows.map(f => ({ type: 'flow', id: f.id, name: f.name, collectionName: c.name, section: 'Flows' }))
     ),
-    { type: 'action', id: 'run-collection', name: 'Run Collection', shortcut: 'Ctrl+R', section: 'Actions' },
-    { type: 'action', id: 'new-flow', name: 'New Flow', shortcut: 'Ctrl+N', section: 'Actions' },
-    { type: 'action', id: 'validate', name: 'Validate Collection', shortcut: 'Ctrl+Shift+V', section: 'Actions' },
-    { type: 'action', id: 'open-file', name: 'Open Collection File', shortcut: 'Ctrl+O', section: 'Actions' },
+    { type: 'action', id: 'run-collection', name: 'Run Collection', shortcut: SHORTCUTS['run-collection'], section: 'Actions' },
+    { type: 'action', id: 'new-flow', name: 'New Flow', shortcut: SHORTCUTS['new-flow'], section: 'Actions' },
+    { type: 'action', id: 'validate', name: 'Validate Collection', shortcut: SHORTCUTS['validate'], section: 'Actions' },
+    { type: 'action', id: 'open-file', name: 'Open Collection File', shortcut: SHORTCUTS['open-file'], section: 'Actions' },
   ]
 
   $: filtered = query.trim()
@@ -46,17 +49,16 @@
     return acc
   }, {} as Record<string, ResultItem[]>)
 
-  $: flatFiltered = filtered
-  $: if (query) highlighted = 0
+  $: { query; highlighted = 0 }
 
   onMount(() => { if (open) inputEl?.focus() })
   $: if (open) setTimeout(() => inputEl?.focus(), 30)
 
   function handleKey(e: KeyboardEvent) {
-    if (e.key === 'ArrowDown') { e.preventDefault(); highlighted = Math.min(highlighted + 1, flatFiltered.length - 1) }
+    if (e.key === 'ArrowDown') { e.preventDefault(); highlighted = Math.min(highlighted + 1, filtered.length - 1) }
     if (e.key === 'ArrowUp')   { e.preventDefault(); highlighted = Math.max(highlighted - 1, 0) }
-    if (e.key === 'Enter' && flatFiltered[highlighted]) {
-      dispatch('select', flatFiltered[highlighted])
+    if (e.key === 'Enter' && filtered[highlighted]) {
+      dispatch('select', filtered[highlighted])
       dispatch('close')
     }
     if (e.key === 'Escape') dispatch('close')
@@ -79,7 +81,7 @@
         autocomplete="off"
       />
       <div class="results">
-        {#if flatFiltered.length === 0}
+        {#if filtered.length === 0}
           {#if collections.length === 0}
             <div class="empty">
               <div class="empty-title">No collections open</div>
@@ -95,7 +97,7 @@
           {#each Object.entries(grouped) as [section, items]}
             <div class="section-header">{section}</div>
             {#each items as item}
-              {@const idx = flatFiltered.indexOf(item)}
+              {@const idx = filtered.indexOf(item)}
               <button
                 class="result-item"
                 class:active={idx === highlighted}
@@ -118,7 +120,7 @@
         {/if}
       </div>
       <div class="palette-footer">
-        <span class="footer-hint">↑↓ navigate · ↵ select · Esc close</span>
+        <span class="footer-hint">↑↓ navigate · ↵ select · Esc close · {paletteShortcut} toggle</span>
       </div>
     </div>
   </div>
