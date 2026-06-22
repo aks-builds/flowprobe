@@ -1,247 +1,260 @@
 <!-- packages/desktop/src/routes/+page.svelte -->
 <script lang="ts">
+  import { invoke } from '@tauri-apps/api/core'
+  import { Channel } from '@tauri-apps/api/core'
+  import { onDestroy } from 'svelte'
   import Sidebar from '$lib/components/Sidebar.svelte'
   import FlowCanvas from '$lib/components/FlowCanvas.svelte'
   import ResultPanel from '$lib/components/ResultPanel.svelte'
   import CommandPalette from '$lib/components/CommandPalette.svelte'
-  import { collectionStore } from '$lib/stores/collection.js'
-  import type { FlowRunResult } from '@flowprobe/core'
+  import ErrorBanner from '$lib/components/ErrorBanner.svelte'
+  import { collectionStore, runStore, validateFlow, type ValidationError } from '$lib/stores/collection.js'
+  import type { Collection } from '@flowprobe/core'
 
+  // ── Run state ──
+  let runError: string | null = null
+  let validationErrors: ValidationError[] = []
+  let showConfetti = false
+  let confettiTimer: ReturnType<typeof setTimeout> | null = null
+  let abortChannel: Channel<unknown> | null = null
+
+  // ── App state ──
   let paletteOpen = false
   let selectedStepId: string | null = null
-  let activeFlowResult: FlowRunResult | null = null
+  let collections: Collection[] = []
+  let activeRunCount = 0
 
+  collectionStore.subscribe(s => { collections = s.collections })
+
+  $: activeCollection = collections.find(c => c.name === $collectionStore.activeCollectionId)
+  $: activeFlow = activeCollection?.flows.find(f => f.id === $collectionStore.activeFlowId) ?? activeCollection?.flows[0]
+
+  // Derive selectedStep for ResultPanel
   $: selectedStep = activeFlow?.steps.find(s => s.id === selectedStepId) ?? null
 
-  $: collections = $collectionStore.collections
-  $: activeCollection = collections.find(c => c.name === $collectionStore.activeCollectionId) ?? null
-  $: activeFlow =
-    activeCollection?.flows.find(f => f.id === $collectionStore.activeFlowId) ??
-    activeCollection?.flows[0] ??
-    null
+  // Validate on flow change
+  $: if (activeFlow) {
+    validationErrors = validateFlow(activeFlow)
+  } else {
+    validationErrors = []
+  }
+  $: canRun = activeFlow != null && validationErrors.length === 0 && $runStore.state !== 'running'
+  $: isRunning = $runStore.state === 'running'
+
+  // Build FlowRunResult for ResultPanel from runStore results
+  $: flowRunResult = $runStore.results.length > 0 ? {
+    id: activeFlow?.id ?? '',
+    name: activeFlow?.name ?? '',
+    passed: $runStore.results.every(r => r.passed),
+    durationMs: $runStore.results.reduce((s, r) => s + r.durationMs, 0),
+    steps: $runStore.results,
+  } : null
+
+  // ── Run collection ──
+  async function handleRun() {
+    if (!canRun || !activeFlow || !activeCollection) return
+    runError = null
+    runStore.startRun()
+    activeRunCount++
+
+    const channel = new Channel<{ type: string; [key: string]: unknown }>()
+    abortChannel = channel
+
+    channel.onmessage = (event) => {
+      if (event.type === 'stepDone') {
+        runStore.addResult({
+          id: event.id as string,
+          type: event.step_type as string,
+          passed: event.passed as boolean,
+          durationMs: event.duration_ms as number,
+          error: event.passed ? undefined : (event.detail as string),
+        })
+      }
+      if (event.type === 'runDone') {
+        runStore.finishRun()
+        const failed = event.failed as number
+        if (failed === 0) {
+          showConfetti = true
+          if (confettiTimer) clearTimeout(confettiTimer)
+          confettiTimer = setTimeout(() => { showConfetti = false }, 2500)
+        }
+      }
+      if (event.type === 'log') {
+        // EventStreamDrawer logs are handled via reactive store update — dispatch custom event
+        document.dispatchEvent(new CustomEvent('flowprobe:log', { detail: event }))
+      }
+      if (event.type === 'error') {
+        runStore.setError(event.message as string)
+        runError = event.message as string
+      }
+    }
+
+    try {
+      const collectionJson = JSON.stringify({
+        version: '1',
+        name: activeCollection.name,
+        flows: activeFlow ? [activeFlow] : activeCollection.flows,
+      })
+      await invoke('run_collection', {
+        collectionJson,
+        flowId: activeFlow.id,
+        channel,
+      })
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err)
+      runStore.setError(message)
+      runError = message
+    } finally {
+      abortChannel = null
+    }
+  }
+
+  function handleStop() {
+    runStore.abortRun()
+    // Channel will be garbage collected; Rust side checks for send errors
+  }
 
   function handleKeydown(e: KeyboardEvent) {
-    if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
-      e.preventDefault()
-      paletteOpen = true
-    }
+    if ((e.metaKey || e.ctrlKey) && e.key === 'k') { e.preventDefault(); paletteOpen = true }
+    if ((e.metaKey || e.ctrlKey) && e.key === 'r' && canRun) { e.preventDefault(); handleRun() }
   }
 
-  function handleSidebarSelect(e: CustomEvent<{ collectionName: string; flowId: string }>) {
-    collectionStore.setActive(e.detail.collectionName, e.detail.flowId)
-  }
-
-  function handlePaletteSelect(e: CustomEvent<{ type: string; id: string; name: string; collectionName?: string }>) {
-    if (e.detail.type === 'flow' && e.detail.collectionName) {
-      collectionStore.setActive(e.detail.collectionName, e.detail.id)
-    }
-  }
+  onDestroy(() => { if (confettiTimer) clearTimeout(confettiTimer) })
 </script>
 
 <svelte:window on:keydown={handleKeydown} />
 
 <div class="app">
   <!-- Titlebar -->
-  <div class="titlebar">
-    <div class="traffic">
-      <span></span>
-      <span></span>
-      <span></span>
+  <div class="tb">
+    <div class="tl"><span class="td r"></span><span class="td y"></span><span class="td g"></span></div>
+    <div class="t-center">
+      <span class="t-name">⚡ FlowProbe</span>
+      <span class="t-run-count" class:running={isRunning} class:passed={$runStore.state === 'done' && $runStore.results.every(r => r.passed)}>
+        #{activeRunCount}
+      </span>
     </div>
-    <div class="title">⚡ FlowProbe</div>
-    <div class="actions">
-      <button class="env-btn">staging ▾</button>
-      <button class="run-btn">▶ Run Collection</button>
+    <div class="t-actions">
+      <button class="t-env" aria-label="Environment selector" disabled>staging ▾</button>
+      {#if isRunning}
+        <button class="t-stop" on:click={handleStop}>■ Stop</button>
+      {:else}
+        <button
+          class="t-run"
+          on:click={handleRun}
+          disabled={!canRun}
+          title={!activeFlow ? 'No flow selected' : validationErrors.length > 0 ? `${validationErrors.length} validation errors` : 'Run collection (Ctrl+R)'}
+        >▶ Run Collection</button>
+      {/if}
     </div>
   </div>
 
-  <!-- Main body -->
-  <div class="body">
-    <Sidebar
-      {collections}
-      activeCollectionId={$collectionStore.activeCollectionId}
-      activeFlowId={$collectionStore.activeFlowId}
-      on:select={handleSidebarSelect}
+  <!-- Confetti bar on all-pass -->
+  {#if showConfetti}
+    <div class="confetti-bar"></div>
+  {/if}
+
+  <!-- Validation / run error banner -->
+  {#if validationErrors.length > 0 && !isRunning}
+    <ErrorBanner
+      message="{validationErrors.length} step{validationErrors.length > 1 ? 's have' : ' has'} errors — fix them before running"
+      level="warning"
+      on:dismiss={() => validationErrors = []}
     />
+  {/if}
+  {#if runError}
+    <ErrorBanner message={runError} level="error" autoDismissMs={8000} on:dismiss={() => runError = null} />
+  {/if}
+
+  <!-- Body -->
+  <div class="body">
+    <Sidebar {collections} activeCollectionId={$collectionStore.activeCollectionId} activeFlowId={$collectionStore.activeFlowId}
+      on:select={e => collectionStore.setActive(e.detail.collectionName, e.detail.flowId)} />
 
     {#if activeFlow}
       <FlowCanvas
         flow={activeFlow}
-        result={activeFlowResult ?? undefined}
+        result={flowRunResult ?? undefined}
         {selectedStepId}
-        on:selectStep={e => (selectedStepId = e.detail)}
+        {validationErrors}
+        on:selectStep={e => selectedStepId = e.detail}
+        on:saveStep={e => {
+          /* TODO Task 13: persist step edit back to collection */
+          console.log('saveStep', e.detail)
+        }}
+        on:addStep={e => {
+          /* TODO Task 13: add step to active flow */
+          console.log('addStep', e.detail)
+        }}
       />
     {:else}
-      <div class="empty-canvas">Open a collection to get started</div>
+      <div class="empty-canvas">
+        <div class="empty-title">No collection open</div>
+        <div class="empty-hint">Open a .flowprobe.json file or drag one here</div>
+      </div>
     {/if}
 
-    <ResultPanel result={activeFlowResult} {selectedStepId} {selectedStep} />
+    <ResultPanel
+      result={flowRunResult}
+      {selectedStepId}
+      selectedStep={selectedStep}
+    />
   </div>
 
   <!-- Statusbar -->
-  <div class="statusbar">
-    <span class="sb-item">
-      <span class="dot green"></span>kafka-local:9092
-    </span>
-    <span class="sb-sep"></span>
-    <span class="sb-item">{collections.length} collection{collections.length !== 1 ? 's' : ''}</span>
-    <span class="sb-sep"></span>
-    <span class="sb-item sb-right">FlowProbe v0.1.0</span>
+  <div class="stbar">
+    <span class="st-item">⚡ FlowProbe v1.0.0</span>
+    <span class="st-sep"></span>
+    <span class="st-item">{collections.length} collection{collections.length !== 1 ? 's' : ''}</span>
+    {#if isRunning}
+      <span class="st-sep"></span>
+      <span class="st-item" style="color:#3b82f6">● Running…</span>
+    {/if}
+    {#if $runStore.state === 'done'}
+      <span class="st-sep"></span>
+      <span class="st-item" style="color:{$runStore.results.every(r => r.passed) ? 'var(--success)' : 'var(--error)'}">
+        {$runStore.results.filter(r => r.passed).length}/{$runStore.results.length} passed
+      </span>
+    {/if}
+    <span class="st-sep" style="margin-left:auto"></span>
+    <span class="st-item" style="color:var(--text-muted);font-family:var(--font-mono);font-size:9px">Ctrl+K</span>
   </div>
 </div>
 
-<CommandPalette
-  open={paletteOpen}
-  {collections}
-  on:select={handlePaletteSelect}
-  on:close={() => (paletteOpen = false)}
-/>
+<CommandPalette open={paletteOpen} {collections} on:close={() => paletteOpen = false}
+  on:select={e => {
+    if (e.detail.type === 'flow' && e.detail.collectionName) {
+      collectionStore.setActive(e.detail.collectionName, e.detail.id)
+    }
+    paletteOpen = false
+  }} />
 
 <style>
-  :global(*, *::before, *::after) {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-  }
-
-  :global(body) {
-    font-family: var(--font-sans);
-    background: var(--bg);
-    color: var(--text-primary);
-  }
-
-  .app {
-    display: flex;
-    flex-direction: column;
-    height: 100vh;
-    overflow: hidden;
-  }
-
-  /* ── Titlebar ── */
-  .titlebar {
-    height: 40px;
-    background: var(--bg);
-    border-bottom: 1px solid var(--border);
-    display: flex;
-    align-items: center;
-    padding: 0 14px;
-    gap: 8px;
-    flex-shrink: 0;
-  }
-
-  .traffic {
-    display: flex;
-    gap: 6px;
-  }
-
-  .traffic span {
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
-    background: var(--border);
-  }
-
-  .title {
-    flex: 1;
-    text-align: center;
-    font-size: var(--text-md);
-    font-weight: 600;
-    color: var(--text-secondary);
-  }
-
-  .actions {
-    display: flex;
-    gap: 8px;
-    align-items: center;
-  }
-
-  .env-btn {
-    background: var(--bg);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-md);
-    padding: 4px 10px;
-    font-size: var(--text-sm);
-    color: var(--text-secondary);
-    cursor: pointer;
-    font-family: var(--font-sans);
-    transition: border-color var(--dur-fast);
-  }
-
-  .env-btn:hover {
-    border-color: var(--border-hover);
-  }
-
-  .run-btn {
-    background: var(--accent);
-    color: #fff;
-    border: none;
-    border-radius: var(--radius-md);
-    padding: 5px 14px;
-    font-size: var(--text-base);
-    font-weight: 600;
-    cursor: pointer;
-    font-family: var(--font-sans);
-    transition: background var(--dur-fast);
-  }
-
-  .run-btn:hover {
-    background: var(--accent-hover);
-  }
-
-  /* ── Body ── */
-  .body {
-    flex: 1;
-    display: flex;
-    overflow: hidden;
-  }
-
-  .empty-canvas {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: var(--text-md);
-    color: var(--text-muted);
-    background: var(--bg);
-  }
-
-  /* ── Statusbar ── */
-  .statusbar {
-    height: 26px;
-    background: var(--bg);
-    border-top: 1px solid var(--border);
-    display: flex;
-    align-items: center;
-    padding: 0 14px;
-    gap: 14px;
-    flex-shrink: 0;
-  }
-
-  .sb-item {
-    font-size: var(--text-xs);
-    color: var(--text-muted);
-    display: flex;
-    align-items: center;
-    gap: 4px;
-  }
-
-  .sb-right {
-    margin-left: auto;
-  }
-
-  .sb-sep {
-    width: 1px;
-    height: 12px;
-    background: var(--border);
-  }
-
-  .dot {
-    width: 5px;
-    height: 5px;
-    border-radius: 50%;
-  }
-
-  .dot.green {
-    background: var(--success);
-  }
+  :global(*, *::before, *::after) { box-sizing: border-box; margin: 0; padding: 0; }
+  :global(body) { font-family: var(--font-sans); background: var(--bg); color: var(--text-primary); overflow: hidden; height: 100vh; }
+  .app { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+  .tb { height: 42px; background: var(--bg); border-bottom: 1px solid var(--border); display: flex; align-items: center; padding: 0 14px; gap: 8px; flex-shrink: 0; position: relative; }
+  .tl { display: flex; gap: 6px; }
+  .td { width: 12px; height: 12px; border-radius: 50%; }
+  .td.r { background: #ff5f56; } .td.y { background: #febc2e; } .td.g { background: #28c840; }
+  .t-center { position: absolute; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 8px; }
+  .t-name { font-size: var(--text-md); font-weight: 700; color: var(--text-secondary); }
+  .t-run-count { font-size: 10px; color: var(--text-muted); font-family: var(--font-mono); }
+  .t-run-count.running { color: #3b82f6; }
+  .t-run-count.passed { color: var(--success); }
+  .t-actions { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+  .t-env { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 4px 10px; font-size: var(--text-sm); color: var(--text-secondary); cursor: not-allowed; opacity: .7; }
+  .t-run { background: var(--accent); color: #fff; border: none; border-radius: var(--radius-md); padding: 5px 16px; font-size: var(--text-base); font-weight: 700; cursor: pointer; transition: background var(--dur-fast), opacity var(--dur-fast); }
+  .t-run:hover:not(:disabled) { background: var(--accent-hover); }
+  .t-run:disabled { opacity: .45; cursor: not-allowed; }
+  .t-stop { background: var(--error-light); border: 1px solid #fecaca; color: var(--error); border-radius: var(--radius-md); padding: 5px 14px; font-size: var(--text-sm); font-weight: 700; cursor: pointer; }
+  .confetti-bar { height: 3px; background: linear-gradient(90deg, #16a34a, #4ade80, #86efac, #4ade80, #16a34a); background-size: 300% 100%; animation: cbar 2s linear infinite; flex-shrink: 0; }
+  @keyframes cbar { 0%{background-position:0% 0%} 100%{background-position:300% 0%} }
+  .body { flex: 1; display: flex; overflow: hidden; }
+  .empty-canvas { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; background: var(--bg); }
+  .empty-title { font-size: var(--text-lg); font-weight: 600; color: var(--text-primary); }
+  .empty-hint { font-size: var(--text-sm); color: var(--text-muted); }
+  .stbar { height: 26px; background: var(--bg); border-top: 1px solid var(--border); display: flex; align-items: center; padding: 0 14px; gap: 10px; flex-shrink: 0; }
+  .st-item { font-size: var(--text-xs); color: var(--text-muted); display: flex; align-items: center; gap: 4px; }
+  .st-sep { width: 1px; height: 12px; background: var(--border); }
 </style>
