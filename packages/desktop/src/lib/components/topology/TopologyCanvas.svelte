@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { untrack } from 'svelte'
   import type { Flow } from '@flowprobe/core'
   import {
     topologyStore, selectedNodeId,
@@ -23,10 +24,10 @@
 
   // Apply run results when runStore updates
   $effect(() => {
-    const current = $topologyStore
     const results = $runStore.results
     const state = $runStore.state
     if (results.length > 0 || state === 'running') {
+      const current = untrack(() => $topologyStore)
       topologyStore.set(applyRunResults(current, results, state))
     }
   })
