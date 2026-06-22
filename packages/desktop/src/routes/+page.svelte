@@ -18,6 +18,7 @@
   let validationErrors: ValidationError[] = []
   let showConfetti = false
   let confettiTimer: ReturnType<typeof setTimeout> | null = null
+  let isStopped = false
   // ── App state ──
   let paletteOpen = false
   let selectedStepId: string | null = null
@@ -29,6 +30,18 @@
 
   $: activeCollection = collections.find(c => c.name === $collectionStore.activeCollectionId)
   $: activeFlow = activeCollection?.flows.find(f => f.id === $collectionStore.activeFlowId) ?? activeCollection?.flows[0]
+  $: brokers = activeFlow
+    ? [...new Set(activeFlow.steps
+        .filter(s => s.type === 'producer' || s.type === 'wait' || s.type === 'message-assert')
+        .flatMap(s => {
+          if (s.type === 'producer') return [s.broker]
+          if (s.type === 'wait') return [s.consumer?.broker ?? '']
+          if (s.type === 'message-assert') return [s.broker]
+          return []
+        })
+        .filter(Boolean)
+      )].map(id => ({ id }))
+    : []
 
   // Derive selectedStep for ResultPanel
   $: selectedStep = activeFlow?.steps.find(s => s.id === selectedStepId) ?? null
@@ -56,18 +69,20 @@
     if (!canRun || !activeFlow || !activeCollection) return
     runError = null
     logs = []
+    isStopped = false
     runStore.startRun()
     activeRunCount++
 
     const channel = new Channel<{ type: string; [key: string]: unknown }>()
 
     channel.onmessage = (event) => {
+      if (isStopped) return
       if (event.type === 'stepDone') {
         runStore.addResult({
           id: event.id as string,
-          type: event.step_type as string,
+          type: event.stepType as string,
           passed: event.passed as boolean,
-          durationMs: event.duration_ms as number,
+          durationMs: event.durationMs as number,
           error: event.passed ? undefined : (event.detail as string),
         })
       }
@@ -82,7 +97,7 @@
       }
       if (event.type === 'log') {
         logs = [...logs, {
-          timestampMs: event.timestamp_ms as number,
+          timestampMs: event.timestampMs as number,
           level: event.level as string,
           message: event.message as string,
         }]
@@ -114,6 +129,7 @@
   }
 
   function handleStop() {
+    isStopped = true
     runStore.abortRun()
     // Channel will be garbage collected; Rust side checks for send errors
   }
@@ -176,7 +192,7 @@
     <ErrorBanner
       message="{validationErrors.length} step{validationErrors.length > 1 ? 's have' : ' has'} errors — fix them before running"
       level="warning"
-      on:dismiss={() => validationErrors = []}
+      on:dismiss={() => { validationErrors = activeFlow ? validateFlow(activeFlow) : [] }}
     />
   {/if}
   {#if runError}
@@ -186,7 +202,7 @@
   <!-- Body -->
   <div class="body">
     <svelte:boundary onerror={(err, reset) => { runError = `Component error: ${(err as Error).message}`; reset() }}>
-      <Sidebar {collections} activeCollectionId={$collectionStore.activeCollectionId} activeFlowId={$collectionStore.activeFlowId}
+      <Sidebar {brokers} {collections} activeCollectionId={$collectionStore.activeCollectionId} activeFlowId={$collectionStore.activeFlowId}
         on:select={e => collectionStore.setActive(e.detail.collectionName, e.detail.flowId)} />
     </svelte:boundary>
 

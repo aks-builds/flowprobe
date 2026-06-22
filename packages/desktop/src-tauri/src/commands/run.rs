@@ -17,6 +17,7 @@ pub enum RunEvent {
     },
     StepDone {
         id: String,
+        step_type: String,
         passed: bool,
         duration_ms: u64,
         detail: String,
@@ -298,7 +299,7 @@ pub async fn run_collection(
             channel
                 .send(RunEvent::StepStart {
                     id: step_id.clone(),
-                    step_type,
+                    step_type: step_type.clone(),
                 })
                 .map_err(|e| format!("Channel send error: {e}"))?;
 
@@ -308,6 +309,7 @@ pub async fn run_collection(
             channel
                 .send(RunEvent::StepDone {
                     id: step_id.clone(),
+                    step_type,
                     passed,
                     duration_ms,
                     detail,

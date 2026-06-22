@@ -354,7 +354,7 @@
 
   .b-dot.connecting {
     background: var(--conn-connecting);
-    animation: b-pulse 1s ease-in-out infinite;
+    animation: b-pulse var(--dur-slow) ease-in-out infinite;
   }
 
   .b-dot.error {
@@ -368,6 +368,12 @@
     }
     50% {
       box-shadow: 0 0 0 5px rgba(217, 119, 6, 0);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .b-dot.connecting {
+      animation: none;
     }
   }
 

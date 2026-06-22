@@ -41,6 +41,9 @@
       const message = err instanceof Error ? err.message : String(err)
       testError = message
       brokerStatusStore.set(brokerId, { connected: false, connecting: false, latencyMs: null, error: message })
+      try {
+        await invoke('disconnect_broker', { id: brokerId })
+      } catch { /* ignore — may not be registered */ }
     } finally {
       testing = false
     }
