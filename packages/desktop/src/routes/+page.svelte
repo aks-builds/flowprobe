@@ -158,30 +158,6 @@
 <svelte:window on:keydown={handleKeydown} />
 
 <div class="app">
-  <!-- Titlebar -->
-  <div class="tb">
-    <div class="tl"><span class="td r"></span><span class="td y"></span><span class="td g"></span></div>
-    <div class="t-center">
-      <span class="t-name">⚡ FlowProbe</span>
-      <span class="t-run-count" class:running={isRunning} class:passed={$runStore.state === 'done' && $runStore.results.every(r => r.passed)}>
-        #{activeRunCount}
-      </span>
-    </div>
-    <div class="t-actions">
-      <button class="t-env" aria-label="Environment selector" disabled>staging ▾</button>
-      {#if isRunning}
-        <button class="t-stop" on:click={handleStop}>■ Stop</button>
-      {:else}
-        <button
-          class="t-run"
-          on:click={handleRun}
-          disabled={!canRun}
-          title={!activeFlow ? 'No flow selected' : validationErrors.length > 0 ? `${validationErrors.length} validation errors` : 'Run collection (Ctrl+R)'}
-        >▶ Run Collection</button>
-      {/if}
-    </div>
-  </div>
-
   <!-- Confetti bar on all-pass -->
   {#if showConfetti}
     <div class="confetti-bar"></div>
@@ -244,7 +220,7 @@
 
   <!-- Statusbar -->
   <div class="stbar">
-    <span class="st-item">⚡ FlowProbe v1.0.0</span>
+    <span class="st-item">⚡ v1.0.0</span>
     <span class="st-sep"></span>
     <span class="st-item">{collections.length} collection{collections.length !== 1 ? 's' : ''}</span>
     {#if isRunning}
@@ -271,24 +247,7 @@
   }} />
 
 <style>
-  :global(*, *::before, *::after) { box-sizing: border-box; margin: 0; padding: 0; }
-  :global(body) { font-family: var(--font-sans); background: var(--bg); color: var(--text-primary); overflow: hidden; height: 100vh; }
-  .app { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
-  .tb { height: 42px; background: var(--bg); border-bottom: 1px solid var(--border); display: flex; align-items: center; padding: 0 14px; gap: 8px; flex-shrink: 0; position: relative; }
-  .tl { display: flex; gap: 6px; }
-  .td { width: 12px; height: 12px; border-radius: 50%; }
-  .td.r { background: #ff5f56; } .td.y { background: #febc2e; } .td.g { background: #28c840; }
-  .t-center { position: absolute; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 8px; }
-  .t-name { font-size: var(--text-md); font-weight: 700; color: var(--text-secondary); }
-  .t-run-count { font-size: 10px; color: var(--text-muted); font-family: var(--font-mono); }
-  .t-run-count.running { color: #3b82f6; }
-  .t-run-count.passed { color: var(--success); }
-  .t-actions { margin-left: auto; display: flex; gap: 8px; align-items: center; }
-  .t-env { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 4px 10px; font-size: var(--text-sm); color: var(--text-secondary); cursor: not-allowed; opacity: .7; }
-  .t-run { background: var(--accent); color: #fff; border: none; border-radius: var(--radius-md); padding: 5px 16px; font-size: var(--text-base); font-weight: 700; cursor: pointer; transition: background var(--dur-fast), opacity var(--dur-fast); }
-  .t-run:hover:not(:disabled) { background: var(--accent-hover); }
-  .t-run:disabled { opacity: .45; cursor: not-allowed; }
-  .t-stop { background: var(--error-light); border: 1px solid #fecaca; color: var(--error); border-radius: var(--radius-md); padding: 5px 14px; font-size: var(--text-sm); font-weight: 700; cursor: pointer; }
+  .app { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
   .confetti-bar { height: 3px; background: linear-gradient(90deg, #16a34a, #4ade80, #86efac, #4ade80, #16a34a); background-size: 300% 100%; animation: cbar 2s linear infinite; flex-shrink: 0; }
   @keyframes cbar { 0%{background-position:0% 0%} 100%{background-position:300% 0%} }
   @media (prefers-reduced-motion: reduce) {
