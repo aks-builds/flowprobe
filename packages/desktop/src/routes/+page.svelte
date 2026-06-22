@@ -11,6 +11,8 @@
   let selectedStepId: string | null = null
   let activeFlowResult: FlowRunResult | null = null
 
+  $: selectedStep = activeFlow?.steps.find(s => s.id === selectedStepId) ?? null
+
   $: collections = $collectionStore.collections
   $: activeCollection = collections.find(c => c.name === $collectionStore.activeCollectionId) ?? null
   $: activeFlow =
@@ -71,7 +73,7 @@
       <div class="empty-canvas">Open a collection to get started</div>
     {/if}
 
-    <ResultPanel result={activeFlowResult} {selectedStepId} />
+    <ResultPanel result={activeFlowResult} {selectedStepId} {selectedStep} />
   </div>
 
   <!-- Statusbar -->
