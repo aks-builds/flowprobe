@@ -1,6 +1,6 @@
 // packages/desktop/src/lib/stores/collection.ts
 import { writable } from 'svelte/store'
-import type { Collection } from '@flowprobe/core'
+import type { Collection, Step } from '@flowprobe/core'
 
 type CollectionStore = {
   collections: Collection[]
@@ -36,6 +36,45 @@ function createCollectionStore() {
         ...s,
         collections: [...s.collections.filter(x => x.name !== c.name), c],
       }))
+    },
+
+    /** Update a single step within a flow. */
+    updateStep(collectionName: string, flowId: string, updatedStep: Step) {
+      update(s => {
+        const colIdx = s.collections.findIndex(c => c.name === collectionName)
+        if (colIdx === -1) return s
+        const collections = [...s.collections]
+        const col = { ...collections[colIdx] }
+        col.flows = col.flows.map(f => f.id !== flowId ? f : {
+          ...f,
+          steps: f.steps.map(st => st.id === updatedStep.id ? updatedStep : st)
+        })
+        collections[colIdx] = col
+        return { ...s, collections }
+      })
+    },
+
+    /** Add a new step of the given type to a flow. */
+    addStep(collectionName: string, flowId: string, stepType: string) {
+      update(s => {
+        const colIdx = s.collections.findIndex(c => c.name === collectionName)
+        if (colIdx === -1) return s
+        const newId = `step-${Date.now()}`
+        const newStep: Step = stepType === 'producer'
+          ? { id: newId, type: 'producer', broker: '', topic: '', payload: {} }
+          : stepType === 'wait'
+          ? { id: newId, type: 'wait', timeoutMs: 5000, consumer: { broker: '', topic: '', groupId: `fp-${newId}` } }
+          : stepType === 'http-assert'
+          ? { id: newId, type: 'http-assert', method: 'GET', url: '', assertions: [] }
+          : stepType === 'db-assert'
+          ? { id: newId, type: 'db-assert', connection: '', query: '', params: [], assertions: [] }
+          : { id: newId, type: 'message-assert', broker: '', topic: '', timeoutMs: 3000, assertions: [] }
+        const collections = [...s.collections]
+        const col = { ...collections[colIdx] }
+        col.flows = col.flows.map(f => f.id !== flowId ? f : { ...f, steps: [...f.steps, newStep] })
+        collections[colIdx] = col
+        return { ...s, collections }
+      })
     },
 
     /** Reset the store to its initial empty state. */

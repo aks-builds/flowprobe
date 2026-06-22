@@ -10,6 +10,7 @@
   import ErrorBanner from '$lib/components/ErrorBanner.svelte'
   import { collectionStore, runStore, validateFlow, type ValidationError } from '$lib/stores/collection.js'
   import type { Collection } from '@flowprobe/core'
+  import { parseCollection } from '@flowprobe/core/schema'
 
   // ── Run state ──
   let runError: string | null = null
@@ -111,9 +112,22 @@
     // Channel will be garbage collected; Rust side checks for send errors
   }
 
-  function handleKeydown(e: KeyboardEvent) {
+  async function handleKeydown(e: KeyboardEvent) {
     if ((e.metaKey || e.ctrlKey) && e.key === 'k') { e.preventDefault(); paletteOpen = true }
     if ((e.metaKey || e.ctrlKey) && e.key === 'r' && canRun) { e.preventDefault(); handleRun() }
+    if ((e.metaKey || e.ctrlKey) && e.key === 'o') {
+      e.preventDefault()
+      try {
+        const json = await invoke<string | null>('open_collection_dialog')
+        if (json) {
+          const collection = parseCollection(JSON.parse(json))
+          collectionStore.loadCollection(collection)
+          collectionStore.setActive(collection.name, collection.flows[0]?.id)
+        }
+      } catch (err) {
+        runError = err instanceof Error ? err.message : String(err)
+      }
+    }
   }
 
   onDestroy(() => { if (confettiTimer) clearTimeout(confettiTimer) })
@@ -176,12 +190,10 @@
         {validationErrors}
         on:selectStep={e => selectedStepId = e.detail}
         on:saveStep={e => {
-          /* TODO Task 13: persist step edit back to collection */
-          console.log('saveStep', e.detail)
+          if (activeCollection) collectionStore.updateStep(activeCollection.name, activeFlow!.id, e.detail)
         }}
         on:addStep={e => {
-          /* TODO Task 13: add step to active flow */
-          console.log('addStep', e.detail)
+          if (activeCollection) collectionStore.addStep(activeCollection.name, activeFlow!.id, e.detail)
         }}
       />
     {:else}
