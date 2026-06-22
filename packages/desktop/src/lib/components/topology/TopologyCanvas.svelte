@@ -1,6 +1,5 @@
 <script lang="ts">
   import type { Flow } from '@flowprobe/core'
-  import { onMount } from 'svelte'
   import {
     topologyStore, selectedNodeId,
     buildTopologyFromFlow, applyRunResults,
