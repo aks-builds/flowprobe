@@ -1,8 +1,10 @@
+<script context="module" lang="ts">
+  export type LogEntry = { timestampMs: number; level: string; message: string }
+</script>
+
 <script lang="ts">
   import { createEventDispatcher, afterUpdate } from 'svelte'
   import { fadeScale } from '../design/animations.js'
-
-  export type LogEntry = { timestampMs: number; level: string; message: string }
 
   export let entries: LogEntry[] = []
   export let open = true

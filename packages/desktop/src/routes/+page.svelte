@@ -11,6 +11,7 @@
   import { collectionStore, runStore, validateFlow, type ValidationError } from '$lib/stores/collection.js'
   import type { Collection } from '@flowprobe/core'
   import { parseCollection } from '@flowprobe/core/schema'
+  import type { LogEntry } from '$lib/components/EventStreamDrawer.svelte'
 
   // ── Run state ──
   let runError: string | null = null
@@ -22,6 +23,7 @@
   let selectedStepId: string | null = null
   let collections: Collection[] = []
   let activeRunCount = 0
+  let logs: LogEntry[] = []
 
   collectionStore.subscribe(s => { collections = s.collections })
 
@@ -53,6 +55,7 @@
   async function handleRun() {
     if (!canRun || !activeFlow || !activeCollection) return
     runError = null
+    logs = []
     runStore.startRun()
     activeRunCount++
 
@@ -78,8 +81,11 @@
         }
       }
       if (event.type === 'log') {
-        // EventStreamDrawer logs are handled via reactive store update — dispatch custom event
-        document.dispatchEvent(new CustomEvent('flowprobe:log', { detail: event }))
+        logs = [...logs, {
+          timestampMs: event.timestamp_ms as number,
+          level: event.level as string,
+          message: event.message as string,
+        }]
       }
       if (event.type === 'error') {
         runStore.setError(event.message as string)
@@ -179,35 +185,45 @@
 
   <!-- Body -->
   <div class="body">
-    <Sidebar {collections} activeCollectionId={$collectionStore.activeCollectionId} activeFlowId={$collectionStore.activeFlowId}
-      on:select={e => collectionStore.setActive(e.detail.collectionName, e.detail.flowId)} />
+    <svelte:boundary onerror={(err, reset) => { runError = `Component error: ${(err as Error).message}`; reset() }}>
+      <Sidebar {collections} activeCollectionId={$collectionStore.activeCollectionId} activeFlowId={$collectionStore.activeFlowId}
+        on:select={e => collectionStore.setActive(e.detail.collectionName, e.detail.flowId)} />
+    </svelte:boundary>
 
-    {#if activeFlow}
-      <FlowCanvas
-        flow={activeFlow}
-        result={flowRunResult ?? undefined}
+    <svelte:boundary onerror={(err) => { runError = `Canvas error: ${(err as Error).message}` }}>
+      {#if activeFlow}
+        <FlowCanvas
+          flow={activeFlow}
+          {logs}
+          result={flowRunResult ?? undefined}
+          {selectedStepId}
+          {validationErrors}
+          on:selectStep={e => selectedStepId = e.detail}
+          on:saveStep={e => {
+            if (activeCollection) collectionStore.updateStep(activeCollection.name, activeFlow!.id, e.detail)
+          }}
+          on:addStep={e => {
+            if (activeCollection) collectionStore.addStep(activeCollection.name, activeFlow!.id, e.detail)
+          }}
+        />
+      {:else}
+        <div class="empty-canvas">
+          <div class="empty-title">No collection open</div>
+          <div class="empty-hint">Open a .flowprobe.json file or drag one here</div>
+        </div>
+      {/if}
+      {#snippet failed()}
+        <div class="error-boundary-fallback">Canvas crashed — <button on:click={() => runStore.reset()}>Reset</button></div>
+      {/snippet}
+    </svelte:boundary>
+
+    <svelte:boundary onerror={(err) => { console.error('ResultPanel error:', err) }}>
+      <ResultPanel
+        result={flowRunResult}
         {selectedStepId}
-        {validationErrors}
-        on:selectStep={e => selectedStepId = e.detail}
-        on:saveStep={e => {
-          if (activeCollection) collectionStore.updateStep(activeCollection.name, activeFlow!.id, e.detail)
-        }}
-        on:addStep={e => {
-          if (activeCollection) collectionStore.addStep(activeCollection.name, activeFlow!.id, e.detail)
-        }}
+        selectedStep={selectedStep}
       />
-    {:else}
-      <div class="empty-canvas">
-        <div class="empty-title">No collection open</div>
-        <div class="empty-hint">Open a .flowprobe.json file or drag one here</div>
-      </div>
-    {/if}
-
-    <ResultPanel
-      result={flowRunResult}
-      {selectedStepId}
-      selectedStep={selectedStep}
-    />
+    </svelte:boundary>
   </div>
 
   <!-- Statusbar -->
@@ -269,4 +285,5 @@
   .stbar { height: 26px; background: var(--bg); border-top: 1px solid var(--border); display: flex; align-items: center; padding: 0 14px; gap: 10px; flex-shrink: 0; }
   .st-item { font-size: var(--text-xs); color: var(--text-muted); display: flex; align-items: center; gap: 4px; }
   .st-sep { width: 1px; height: 12px; background: var(--border); }
+  .error-boundary-fallback { flex: 1; display: flex; align-items: center; justify-content: center; background: var(--error-light); color: var(--error); font-size: var(--text-sm); gap: 8px; }
 </style>

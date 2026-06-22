@@ -10,7 +10,7 @@
   export let selected = false
   export let hasError = false
 
-  const dispatch = createEventDispatcher<{ select: void; delete: void; duplicate: void; save: { step: Step } }>()
+  const dispatch = createEventDispatcher<{ select: void; delete: void; duplicate: void; save: Step }>()
 
   /** Apply shake only when result is explicitly failed; no-op otherwise. */
   function maybeShake(node: HTMLElement): { destroy(): void } {

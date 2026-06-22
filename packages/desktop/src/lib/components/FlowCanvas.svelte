@@ -19,7 +19,7 @@
     selectStep: string
     addStep: string
     reorder: { fromIdx: number; toIdx: number }
-    saveStep: { step: Flow['steps'][number] }
+    saveStep: Flow['steps'][number]
   }>()
 
   function getStepResult(stepId: string) {
