@@ -14,19 +14,31 @@
     http: '#f59e0b', webhook: '#f59e0b', rabbitmq: '#a855f7', 'sns-sqs': '#f59e0b',
   }
 
-  $: size = NODE_SIZES[node.type] ?? 50
-  $: icon = ICONS[node.type] ?? '●'
-  $: color = COLORS[node.type] ?? '#6366f1'
-  $: isSelected = $selectedNodeId === node.id
-  $: glow = node.status === 'fail'
+  function hexToRgb(hex: string): string {
+    const r = parseInt(hex.slice(1, 3), 16)
+    const g = parseInt(hex.slice(3, 5), 16)
+    const b = parseInt(hex.slice(5, 7), 16)
+    return `${r},${g},${b}`
+  }
+
+  const size = $derived(NODE_SIZES[node.type] ?? 50)
+  const icon = $derived(ICONS[node.type] ?? '●')
+  const color = $derived(COLORS[node.type] ?? '#6366f1')
+  const isSelected = $derived($selectedNodeId === node.id)
+  const glow = $derived(node.status === 'fail'
     ? `0 0 0 6px rgba(239,68,68,.12), 0 0 20px rgba(239,68,68,.3)`
     : isSelected
     ? `0 0 0 6px rgba(6,182,212,.12), 0 0 22px rgba(6,182,212,.3)`
     : node.status === 'running'
     ? `0 0 18px ${color}44`
-    : 'none'
-  $: borderColor = node.status === 'fail' ? '#ef4444' : node.status === 'pass' ? color : color
-  $: borderOpacity = node.status === 'pending' ? 0.25 : isSelected ? 1 : 0.55
+    : 'none')
+  const borderColor = $derived(node.status === 'fail'
+    ? '#ef4444'
+    : node.status === 'pending'
+    ? `rgba(${hexToRgb(color)}, 0.25)`
+    : isSelected
+    ? color
+    : `rgba(${hexToRgb(color)}, 0.55)`)
 </script>
 
 <div
@@ -56,7 +68,6 @@
     style:width="{size}px"
     style:height="{size}px"
     style:border-color="{borderColor}"
-    style:border-opacity="{borderOpacity}"
     style:box-shadow={glow}
     style:background="rgba({color.replace('#','').match(/.{2}/g)?.map(h=>parseInt(h,16)).join(',') ?? '99,102,241'}, 0.12)"
   >
