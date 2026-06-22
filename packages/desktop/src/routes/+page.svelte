@@ -80,9 +80,9 @@
       if (event.type === 'stepDone') {
         runStore.addResult({
           id: event.id as string,
-          type: event.stepType as string,
+          type: (event.step_type ?? event.stepType) as string,
           passed: event.passed as boolean,
-          durationMs: event.durationMs as number,
+          durationMs: (event.duration_ms ?? event.durationMs) as number,
           error: event.passed ? undefined : (event.detail as string),
         })
       }
@@ -97,7 +97,7 @@
       }
       if (event.type === 'log') {
         logs = [...logs, {
-          timestampMs: event.timestampMs as number,
+          timestampMs: (event.timestamp_ms ?? event.timestampMs) as number,
           level: event.level as string,
           message: event.message as string,
         }]

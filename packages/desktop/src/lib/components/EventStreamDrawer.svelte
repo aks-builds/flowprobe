@@ -18,6 +18,7 @@
   })
 
   function formatTime(ms: number): string {
+    if (!Number.isFinite(ms)) return '??:??:??.???'
     return new Date(ms).toISOString().slice(11, 23)
   }
 
