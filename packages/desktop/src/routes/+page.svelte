@@ -16,8 +16,6 @@
   let validationErrors: ValidationError[] = []
   let showConfetti = false
   let confettiTimer: ReturnType<typeof setTimeout> | null = null
-  let abortChannel: Channel<unknown> | null = null
-
   // ── App state ──
   let paletteOpen = false
   let selectedStepId: string | null = null
@@ -58,7 +56,6 @@
     activeRunCount++
 
     const channel = new Channel<{ type: string; [key: string]: unknown }>()
-    abortChannel = channel
 
     channel.onmessage = (event) => {
       if (event.type === 'stepDone') {
@@ -105,7 +102,7 @@
       runStore.setError(message)
       runError = message
     } finally {
-      abortChannel = null
+      // channel goes out of scope; Rust side detects dropped receiver
     }
   }
 
@@ -250,6 +247,9 @@
   .t-stop { background: var(--error-light); border: 1px solid #fecaca; color: var(--error); border-radius: var(--radius-md); padding: 5px 14px; font-size: var(--text-sm); font-weight: 700; cursor: pointer; }
   .confetti-bar { height: 3px; background: linear-gradient(90deg, #16a34a, #4ade80, #86efac, #4ade80, #16a34a); background-size: 300% 100%; animation: cbar 2s linear infinite; flex-shrink: 0; }
   @keyframes cbar { 0%{background-position:0% 0%} 100%{background-position:300% 0%} }
+  @media (prefers-reduced-motion: reduce) {
+    .confetti-bar { animation: none; }
+  }
   .body { flex: 1; display: flex; overflow: hidden; }
   .empty-canvas { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; background: var(--bg); }
   .empty-title { font-size: var(--text-lg); font-weight: 600; color: var(--text-primary); }
