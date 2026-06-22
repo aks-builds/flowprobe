@@ -67,6 +67,15 @@
   --conn-error: #dc2626;
   --conn-offline: #cbd5e1;
   --conn-running: #3b82f6;
+
+  /* Titlebar */
+  --titlebar-h: 40px;
+  --titlebar-bg: #040408;
+
+  /* Splash */
+  --splash-bg: #07070f;
+  --splash-dur: 500ms;
+  --splash-fade: 200ms;
 }
 
 @media (prefers-reduced-motion: reduce) {
