@@ -38,7 +38,7 @@
     <span class="toggle-arrow">{open ? '▾' : '▸'}</span>
   </div>
   {#if open}
-    <div class="log" bind:this={logEl} in:fadeScale={{ duration: 100 }}>
+    <div class="log" bind:this={logEl} in:fadeScale>
       {#each entries as entry (entry.timestampMs + entry.message)}
         <div class="entry">
           <span class="ts">{formatTime(entry.timestampMs)}</span>
@@ -70,4 +70,8 @@
   .cursor-line { font-size: 9px; color: #475569; font-family: var(--font-mono); }
   .cursor { animation: cblink 1s step-end infinite; }
   @keyframes cblink { 0%,100%{opacity:1} 50%{opacity:0} }
+  @media (prefers-reduced-motion: reduce) {
+    .live-badge { animation: none; }
+    .cursor { animation: none; }
+  }
 </style>
