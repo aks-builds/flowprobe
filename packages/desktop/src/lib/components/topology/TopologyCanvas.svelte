@@ -55,7 +55,7 @@
   <!-- Flow name strip -->
   <div class="flow-strip">
     <span class="flow-name">{flow.name}</span>
-    {#if $runStore.state === 'pass' || ($runStore.state === 'done' && $runStore.results.every(r => r.passed))}
+    {#if $runStore.state === 'done' && $runStore.results.every(r => r.passed)}
       <span class="flow-badge pass">PASSED</span>
     {:else if $runStore.state === 'done' && $runStore.results.some(r => !r.passed)}
       <span class="flow-badge fail">FAILED</span>
