@@ -292,7 +292,7 @@
   .run-flow-name { font-size: var(--text-md); font-weight: 700; color: var(--text-primary); }
   .run-progress-wrap { flex: 1; }
   .run-bar { height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; }
-  .run-bar-fill { height: 100%; border-radius: 2px; transition: width .4s ease, background .3s ease; }
+  .run-bar-fill { height: 100%; border-radius: 2px; transition: width var(--dur-normal) ease, background var(--dur-fast) ease; }
   .run-step-count { font-size: var(--text-sm); color: var(--text-muted); font-family: var(--font-mono); }
   .timeline { flex: 1; padding: 12px 18px; overflow-y: auto; }
   .t-row { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 8px; position: relative; }
@@ -301,7 +301,7 @@
   .t-dot { width: 17px; height: 17px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 700; color: #fff; margin-top: 1px; background: var(--border); transition: background var(--dur-fast); }
   .t-dot.pass { background: var(--success); }
   .t-dot.fail { background: var(--error); }
-  .t-dot.running { background: #3b82f6; animation: t-pulse 1s ease-in-out infinite; }
+  .t-dot.running { background: #3b82f6; animation: t-pulse var(--dur-slow) ease-in-out infinite; }
   .t-dot.pending { background: var(--border); }
   @keyframes t-pulse { 0%,100%{box-shadow:0 0 0 0 rgba(59,130,246,.4)} 50%{box-shadow:0 0 0 5px rgba(59,130,246,0)} }
   @media (prefers-reduced-motion: reduce) {
