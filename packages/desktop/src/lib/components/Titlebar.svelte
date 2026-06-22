@@ -1,10 +1,9 @@
 <script lang="ts">
   import { getCurrentWindow } from '@tauri-apps/api/window'
+  import { onMount } from 'svelte'
   import LogoMark from '../assets/LogoMark.svelte'
   import { navStore, type NavTab } from '../stores/nav.js'
   import { runStore } from '../stores/collection.js'
-
-  const appWindow = getCurrentWindow()
 
   const tabs: { id: NavTab; label: string; icon: string }[] = [
     { id: 'collections',  label: 'Collections',  icon: '⚡' },
@@ -13,9 +12,17 @@
     { id: 'settings',     label: 'Settings',     icon: '⚙' },
   ]
 
+  let appWindow: Awaited<ReturnType<typeof getCurrentWindow>> | null = $state(null)
   let isMaximized = $state(false)
 
+  onMount(async () => {
+    const { getCurrentWindow } = await import('@tauri-apps/api/window')
+    appWindow = getCurrentWindow()
+    isMaximized = await appWindow.isMaximized()
+  })
+
   async function toggleMaximize() {
+    if (!appWindow) return
     await appWindow.toggleMaximize()
     isMaximized = await appWindow.isMaximized()
   }
@@ -60,11 +67,11 @@
 
   <!-- Window controls (Windows-style) -->
   <div class="wc" data-tauri-drag-region="false">
-    <button class="wc-btn" onclick={() => appWindow.minimize()} aria-label="Minimize">─</button>
+    <button class="wc-btn" onclick={() => appWindow?.minimize()} aria-label="Minimize">─</button>
     <button class="wc-btn" onclick={toggleMaximize} aria-label={isMaximized ? 'Restore' : 'Maximize'}>
       {isMaximized ? '❐' : '⬜'}
     </button>
-    <button class="wc-btn close" onclick={() => appWindow.close()} aria-label="Close">✕</button>
+    <button class="wc-btn close" onclick={() => appWindow?.close()} aria-label="Close">✕</button>
   </div>
 </div>
 

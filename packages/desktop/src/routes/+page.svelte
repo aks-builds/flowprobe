@@ -1,4 +1,4 @@
-<!-- packages/desktop/src/routes/+page.svelte -->
+﻿<!-- packages/desktop/src/routes/+page.svelte -->
 <script lang="ts">
   import { invoke } from '@tauri-apps/api/core'
   import { Channel } from '@tauri-apps/api/core'
@@ -163,6 +163,23 @@
     <div class="confetti-bar"></div>
   {/if}
 
+  <!-- Run bar (replaces the old titlebar run button) -->
+  <div class="run-bar">
+    {#if isRunning}
+      <button class="btn-stop" onclick={handleStop}>■ Stop</button>
+    {:else}
+      <button
+        class="btn-run"
+        onclick={handleRun}
+        disabled={!canRun}
+        title={!activeFlow ? 'No flow selected' : validationErrors.length > 0 ? `${validationErrors.length} validation errors` : 'Run collection (Ctrl+R)'}
+      >▶ Run Collection</button>
+    {/if}
+    <span class="run-count" class:running={isRunning} class:passed={$runStore.state === 'done' && $runStore.results.every(r => r.passed)}>
+      #{activeRunCount}
+    </span>
+  </div>
+
   <!-- Validation / run error banner -->
   {#if validationErrors.length > 0 && !isRunning}
     <ErrorBanner
@@ -205,7 +222,7 @@
         </div>
       {/if}
       {#snippet failed()}
-        <div class="error-boundary-fallback">Canvas crashed — <button on:click={() => runStore.reset()}>Reset</button></div>
+        <div class="error-boundary-fallback">Canvas crashed — <button onclick={() => runStore.reset()}>Reset</button></div>
       {/snippet}
     </svelte:boundary>
 
@@ -248,6 +265,49 @@
 
 <style>
   .app { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
+  .run-bar {
+    height: 36px;
+    background: var(--bg, #07070f);
+    border-bottom: 1px solid var(--border, #161628);
+    display: flex;
+    align-items: center;
+    padding: 0 14px;
+    gap: 10px;
+    flex-shrink: 0;
+  }
+  .btn-run {
+    background: var(--accent, #6366f1);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius-md, 8px);
+    padding: 5px 16px;
+    font-size: var(--text-sm, 11px);
+    font-weight: 700;
+    cursor: pointer;
+    transition: background var(--dur-fast, 150ms), opacity var(--dur-fast, 150ms);
+  }
+  .btn-run:hover:not(:disabled) { background: #4f46e5; }
+  .btn-run:disabled { opacity: .45; cursor: not-allowed; }
+  .btn-stop {
+    background: var(--error-light, #fee2e2);
+    border: 1px solid #fecaca;
+    color: var(--error, #ef4444);
+    border-radius: var(--radius-md, 8px);
+    padding: 5px 14px;
+    font-size: var(--text-sm, 11px);
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .run-count {
+    font-size: 10px;
+    color: var(--text-muted, #475569);
+    font-family: var(--font-mono, monospace);
+  }
+  .run-count.running { color: #3b82f6; }
+  .run-count.passed { color: var(--success, #22c55e); }
+  @media (prefers-reduced-motion: reduce) {
+    .btn-run { transition: none; }
+  }
   .confetti-bar { height: 3px; background: linear-gradient(90deg, #16a34a, #4ade80, #86efac, #4ade80, #16a34a); background-size: 300% 100%; animation: cbar 2s linear infinite; flex-shrink: 0; }
   @keyframes cbar { 0%{background-position:0% 0%} 100%{background-position:300% 0%} }
   @media (prefers-reduced-motion: reduce) {

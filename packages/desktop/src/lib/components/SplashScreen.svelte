@@ -43,7 +43,7 @@
         progressVisible = progressFill = true
       nodes = [true, true, true, true, true]
       edges = [true, true, true, true]
-      add(() => { fading = true; T(() => { visible = false; dispatch('dismiss') }, 200) }, 300)
+      add(() => { fading = true; timers.push(T(() => { visible = false; dispatch('dismiss') }, 200)) }, 300)
       return () => timers.forEach(clearTimeout)
     }
 
@@ -62,12 +62,12 @@
       }
     }
 
-    add(() => { progressVisible = true; T(() => { progressFill = true }, 50) }, 1700)
+    add(() => { progressVisible = true; timers.push(T(() => { progressFill = true }, 50)) }, 1700)
 
     // Total ~2350ms → fade out
     add(() => {
       fading = true
-      T(() => { visible = false; dispatch('dismiss') }, 200)
+      timers.push(T(() => { visible = false; dispatch('dismiss') }, 200))
     }, 2350)
 
     return () => timers.forEach(clearTimeout)
