@@ -82,7 +82,7 @@
         <button
           class="collection-row"
           class:active-collection={col.name === activeCollectionId}
-          on:click={() => toggleCollection(col.name)}
+          onclick={() => toggleCollection(col.name)}
           aria-expanded={!!expanded[col.name]}
         >
           <span class="chevron" class:open={expanded[col.name]}>›</span>
@@ -98,7 +98,7 @@
                 <button
                   class="flow-row"
                   class:active-flow={activeCollectionId === col.name && activeFlowId === flow.id}
-                  on:click={() => selectFlow(col.name, flow.id)}
+                  onclick={() => selectFlow(col.name, flow.id)}
                 >
                   <span class="flow-icon" aria-hidden="true">⇢</span>
                   <span class="flow-name">{flow.name}</span>
@@ -125,8 +125,8 @@
           class="broker-row"
           role="button"
           tabindex="0"
-          on:click={() => toggleBrokerConfig(broker.id)}
-          on:keydown={e => e.key === 'Enter' && toggleBrokerConfig(broker.id)}
+          onclick={() => toggleBrokerConfig(broker.id)}
+          onkeydown={e => (e.key === 'Enter' || e.key === ' ') && toggleBrokerConfig(broker.id)}
         >
           <span
             class="b-dot"

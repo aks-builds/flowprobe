@@ -1,8 +1,10 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, beforeEach } from 'vitest'
 import { get } from 'svelte/store'
 import { workspaceStore } from './workspace.js'
 
 describe('workspaceStore', () => {
+  beforeEach(() => { workspaceStore.reset() })
+
   it('starts empty', () => {
     expect(get(workspaceStore).tabs).toHaveLength(0)
     expect(get(workspaceStore).activeId).toBeNull()
@@ -16,12 +18,14 @@ describe('workspaceStore', () => {
     expect(s.activeId).toBe(s.tabs[0].id)
   })
 
-  it('opening same flow again focuses existing tab, not duplicate', () => {
-    workspaceStore.openFlow('E2E Sample', 'flow-1')
+  it('opening same flow again focuses existing tab', () => {
+    workspaceStore.openFlow('E2E Sample', 'flow-1')  // pre-populate
+    workspaceStore.openFlow('E2E Sample', 'flow-1')  // try duplicate
     expect(get(workspaceStore).tabs).toHaveLength(1)
   })
 
   it('closes a tab', () => {
+    workspaceStore.openFlow('E2E Sample', 'flow-1')
     const tabId = get(workspaceStore).tabs[0].id
     workspaceStore.closeTab(tabId)
     expect(get(workspaceStore).tabs).toHaveLength(0)

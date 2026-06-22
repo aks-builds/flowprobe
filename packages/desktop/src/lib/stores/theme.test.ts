@@ -3,15 +3,18 @@ import { get } from 'svelte/store'
 
 // Mock localStorage
 const store: Record<string, string> = {}
-vi.stubGlobal('localStorage', {
-  getItem: (k: string) => store[k] ?? null,
-  setItem: (k: string, v: string) => { store[k] = v },
-})
-// Mock document
-vi.stubGlobal('document', { documentElement: { setAttribute: vi.fn() } })
 
 describe('themeStore', () => {
-  beforeEach(() => { delete store['flowprobe:theme'] })
+  beforeEach(async () => {
+    vi.resetModules()
+    delete store['flowprobe:theme']
+    // Re-apply stubs after resetModules
+    vi.stubGlobal('localStorage', {
+      getItem: (k: string) => store[k] ?? null,
+      setItem: (k: string, v: string) => { store[k] = v },
+    })
+    vi.stubGlobal('document', { documentElement: { setAttribute: vi.fn() } })
+  })
 
   it('defaults to dark', async () => {
     const { themeStore } = await import('./theme.js')

@@ -10,6 +10,7 @@
   import ErrorBanner from '$lib/components/ErrorBanner.svelte'
   import WorkspaceTabs from '$lib/components/WorkspaceTabs.svelte'
   import { collectionStore, runStore, validateFlow, type ValidationError } from '$lib/stores/collection.js'
+  import { workspaceStore } from '$lib/stores/workspace.js'
   import type { Collection } from '@flowprobe/core'
   import { parseCollection } from '@flowprobe/core/schema'
   import type { LogEntry } from '$lib/components/EventStreamDrawer.svelte'
@@ -197,7 +198,10 @@
   <div class="body">
     <svelte:boundary onerror={(err, reset) => { runError = `Component error: ${(err as Error).message}`; reset() }}>
       <Sidebar {brokers} {collections} activeCollectionId={$collectionStore.activeCollectionId} activeFlowId={$collectionStore.activeFlowId}
-        on:select={e => collectionStore.setActive(e.detail.collectionName, e.detail.flowId)} />
+        on:select={e => {
+          collectionStore.setActive(e.detail.collectionName, e.detail.flowId)
+          if (e.detail.flowId) workspaceStore.openFlow(e.detail.collectionName, e.detail.flowId)
+        }} />
     </svelte:boundary>
 
     <div class="canvas-column">

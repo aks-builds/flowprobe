@@ -13,7 +13,7 @@ type WorkspaceState = {
 }
 
 function createWorkspaceStore() {
-  const { subscribe, update } = writable<WorkspaceState>({ tabs: [], activeId: null })
+  const { subscribe, update, set } = writable<WorkspaceState>({ tabs: [], activeId: null })
 
   return {
     subscribe,
@@ -43,6 +43,9 @@ function createWorkspaceStore() {
     },
     markClean(id: string) {
       update(s => ({ ...s, tabs: s.tabs.map(t => t.id === id ? { ...t, dirty: false } : t) }))
+    },
+    reset() {
+      set({ tabs: [], activeId: null })
     },
   }
 }
