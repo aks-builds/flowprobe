@@ -4,16 +4,25 @@
   import StepTypePicker from './StepTypePicker.svelte'
   import EventStreamDrawer from './EventStreamDrawer.svelte'
   import type { LogEntry } from './EventStreamDrawer.svelte'
+  import TopologyCanvas from './topology/TopologyCanvas.svelte'
   import { runStore } from '../stores/collection.js'
   import type { ValidationError } from '../stores/collection.js'
   import type { Flow } from '@flowprobe/core'
   import type { FlowRunResult } from '@flowprobe/core'
 
-  export let flow: Flow
-  export let result: FlowRunResult | undefined = undefined
-  export let selectedStepId: string | null = null
-  export let logs: LogEntry[] = []
-  export let validationErrors: ValidationError[] = []
+  let {
+    flow,
+    result = undefined,
+    selectedStepId = null,
+    logs = [],
+    validationErrors = [],
+  }: {
+    flow: Flow
+    result?: FlowRunResult
+    selectedStepId?: string | null
+    logs?: LogEntry[]
+    validationErrors?: ValidationError[]
+  } = $props()
 
   const dispatch = createEventDispatcher<{
     selectStep: string
@@ -27,7 +36,7 @@
   }
 
   // Minimal drag-reorder state
-  let dragFromIdx: number | null = null
+  let dragFromIdx: number | null = $state(null)
 
   function onDragStart(idx: number) {
     dragFromIdx = idx
@@ -41,14 +50,37 @@
   }
 
   // Run mode state
-  let showTypePicker = false
-  let drawerOpen = true
+  let showTypePicker = $state(false)
+  let drawerOpen = $state(true)
 
-  $: isRunMode = $runStore.state === 'running' || $runStore.state === 'done' || $runStore.state === 'aborted'
-  $: runResults = $runStore.results
+  // View toggle: 'edit' | 'topology'
+  let canvasView = $state<'edit' | 'topology'>('edit')
+
+  const isRunMode = $derived($runStore.state === 'running' || $runStore.state === 'done' || $runStore.state === 'aborted')
+  const runResults = $derived($runStore.results)
+
+  // Auto-switch to topology when run starts; back to edit on reset
+  $effect(() => {
+    if ($runStore.state === 'running' || $runStore.state === 'done') {
+      canvasView = 'topology'
+    }
+    if ($runStore.state === 'idle') {
+      canvasView = 'edit'
+    }
+  })
 </script>
 
-{#if !isRunMode}
+<!-- View toggle pill (only visible when a run has happened) -->
+{#if $runStore.state !== 'idle'}
+  <div class="view-toggle">
+    <button class:active={canvasView === 'topology'} onclick={() => canvasView = 'topology'}>Topology</button>
+    <button class:active={canvasView === 'edit'} onclick={() => canvasView = 'edit'}>Edit</button>
+  </div>
+{/if}
+
+{#if canvasView === 'topology' && $runStore.state !== 'idle'}
+  <TopologyCanvas {flow} {logs} />
+{:else}
   <!-- EDIT MODE: existing pipeline + type picker -->
   <div class="canvas">
     <div class="canvas-header">
@@ -75,13 +107,14 @@
           </div>
         {/if}
 
-        <!-- svelte-ignore a11y-no-static-element-interactions -->
+        <!-- svelte-ignore a11y_no_static_element_interactions -->
         <div
           class="step-wrapper"
+          role="listitem"
           draggable="true"
-          on:dragstart={() => onDragStart(i)}
-          on:dragover|preventDefault
-          on:drop|preventDefault={() => onDrop(i)}
+          ondragstart={() => onDragStart(i)}
+          ondragover={(e) => e.preventDefault()}
+          ondrop={(e) => { e.preventDefault(); onDrop(i) }}
         >
           <StepCard
             {step}
@@ -100,7 +133,7 @@
       <button
         class="add-step"
         title="Add a new step"
-        on:click={() => showTypePicker = !showTypePicker}
+        onclick={() => showTypePicker = !showTypePicker}
       >
         + Add step
       </button>
@@ -112,66 +145,6 @@
         on:cancel={() => showTypePicker = false}
       />
     {/if}
-  </div>
-{:else}
-  <!-- RUN MODE: Vercel-style timeline -->
-  <div class="run-mode">
-    <div class="run-header">
-      <span class="run-flow-name">{flow.name}</span>
-      <div class="run-progress-wrap">
-        <div class="run-bar">
-          <div
-            class="run-bar-fill"
-            style="width:{$runStore.state === 'running' ? '60%' : '100%'};background:{$runStore.state === 'done' && $runStore.results.every(r => r.passed) ? 'var(--success)' : 'var(--accent)'}"
-          ></div>
-        </div>
-      </div>
-      <span class="run-step-count">
-        {runResults.filter(r => r.passed).length + runResults.filter(r => !r.passed).length} / {flow.steps.length}
-      </span>
-    </div>
-
-    <div class="timeline">
-      {#each flow.steps as step (step.id)}
-        {@const result = getStepResult(step.id)}
-        {@const isActive = $runStore.state === 'running' && !result && flow.steps.indexOf(step) === runResults.length}
-        <div class="t-row">
-          <div
-            class="t-dot"
-            class:pass={result?.passed === true}
-            class:fail={result?.passed === false}
-            class:running={isActive}
-            class:pending={!result && !isActive}
-          >
-            {#if result?.passed === true}✓{:else if result?.passed === false}✕{/if}
-          </div>
-          <div class="t-body">
-            <div class="t-name">{step.type} · {step.id}</div>
-            {#if result?.error}
-              <div class="t-error">{result.error}</div>
-            {:else if result}
-              <div class="t-detail">
-                {#if step.type === 'producer'}Published successfully{/if}
-                {#if step.type === 'wait'}Consumer received message{/if}
-                {#if step.type === 'http-assert'}HTTP assertion passed{/if}
-              </div>
-            {:else if isActive}
-              <div class="t-detail t-running">running…</div>
-            {/if}
-          </div>
-          {#if result}
-            <div class="t-dur">{result.durationMs}ms</div>
-          {/if}
-        </div>
-      {/each}
-    </div>
-
-    <EventStreamDrawer
-      entries={logs}
-      open={drawerOpen}
-      liveCount={$runStore.state === 'running' ? 1 : 0}
-      on:toggle={() => drawerOpen = !drawerOpen}
-    />
   </div>
 {/if}
 
@@ -286,32 +259,17 @@
     outline-offset: 2px;
   }
 
-  /* ── RUN MODE ─────────────────────────────────────────────── */
-  .run-mode { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
-  .run-header { padding: 10px 18px; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
-  .run-flow-name { font-size: var(--text-md); font-weight: 700; color: var(--text-primary); }
-  .run-progress-wrap { flex: 1; }
-  .run-bar { height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; }
-  .run-bar-fill { height: 100%; border-radius: 2px; transition: width var(--dur-normal) ease, background var(--dur-fast) ease; }
-  .run-step-count { font-size: var(--text-sm); color: var(--text-muted); font-family: var(--font-mono); }
-  .timeline { flex: 1; padding: 12px 18px; overflow-y: auto; }
-  .t-row { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 8px; position: relative; }
-  .t-row::after { content:''; position:absolute; left:8px; top:17px; bottom:-8px; width:1.5px; background:var(--border); }
-  .t-row:last-child::after { display:none; }
-  .t-dot { width: 17px; height: 17px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 700; color: #fff; margin-top: 1px; background: var(--border); transition: background var(--dur-fast); }
-  .t-dot.pass { background: var(--success); }
-  .t-dot.fail { background: var(--error); }
-  .t-dot.running { background: #3b82f6; animation: t-pulse var(--dur-slow) ease-in-out infinite; }
-  .t-dot.pending { background: var(--border); }
-  @keyframes t-pulse { 0%,100%{box-shadow:0 0 0 0 rgba(59,130,246,.4)} 50%{box-shadow:0 0 0 5px rgba(59,130,246,0)} }
-  @media (prefers-reduced-motion: reduce) {
-    .t-dot.running { animation: none; }
-    .run-bar-fill { transition: none; }
+  /* ── VIEW TOGGLE ──────────────────────────────────────────── */
+  .view-toggle {
+    position: absolute; top: 40px; right: 14px; z-index: 15;
+    display: flex; background: var(--surface2, #111120); border: 1px solid var(--border2, #1e1e32);
+    border-radius: 8px; overflow: hidden;
   }
-  .t-body { flex: 1; }
-  .t-name { font-size: var(--text-sm); font-weight: 600; color: var(--text-primary); }
-  .t-detail { font-size: var(--text-xs); color: var(--text-muted); font-family: var(--font-mono); margin-top: 2px; }
-  .t-error { font-size: var(--text-xs); color: var(--error); font-family: var(--font-mono); margin-top: 2px; }
-  .t-running { color: #3b82f6; }
-  .t-dur { font-size: var(--text-xs); color: var(--text-secondary); font-family: var(--font-mono); white-space: nowrap; }
+  .view-toggle button {
+    padding: 4px 12px; font-size: 9.5px; background: none; border: none; cursor: pointer;
+    color: var(--text-muted, #334155); transition: background var(--dur-fast, 150ms), color var(--dur-fast, 150ms);
+    font-family: var(--font-sans);
+  }
+  .view-toggle button.active { background: rgba(99,102,241,.15); color: #a5b4fc; font-weight: 700; }
+  @media (prefers-reduced-motion: reduce) { .view-toggle button { transition: none; } }
 </style>
