@@ -8,6 +8,7 @@
   import ResultPanel from '$lib/components/ResultPanel.svelte'
   import CommandPalette from '$lib/components/CommandPalette.svelte'
   import ErrorBanner from '$lib/components/ErrorBanner.svelte'
+  import WorkspaceTabs from '$lib/components/WorkspaceTabs.svelte'
   import { collectionStore, runStore, validateFlow, type ValidationError } from '$lib/stores/collection.js'
   import type { Collection } from '@flowprobe/core'
   import { parseCollection } from '@flowprobe/core/schema'
@@ -199,40 +200,46 @@
         on:select={e => collectionStore.setActive(e.detail.collectionName, e.detail.flowId)} />
     </svelte:boundary>
 
-    <svelte:boundary onerror={(err) => { runError = `Canvas error: ${(err as Error).message}` }}>
-      {#if activeFlow}
-        <FlowCanvas
-          flow={activeFlow}
-          {logs}
-          result={flowRunResult ?? undefined}
-          {selectedStepId}
-          {validationErrors}
-          on:selectStep={e => selectedStepId = e.detail}
-          on:saveStep={e => {
-            if (activeCollection) collectionStore.updateStep(activeCollection.name, activeFlow!.id, e.detail)
-          }}
-          on:addStep={e => {
-            if (activeCollection) collectionStore.addStep(activeCollection.name, activeFlow!.id, e.detail)
-          }}
-        />
-      {:else}
-        <div class="empty-canvas">
-          <div class="empty-title">No collection open</div>
-          <div class="empty-hint">Open a .flowprobe.json file or drag one here</div>
-        </div>
-      {/if}
-      {#snippet failed()}
-        <div class="error-boundary-fallback">Canvas crashed — <button onclick={() => runStore.reset()}>Reset</button></div>
-      {/snippet}
-    </svelte:boundary>
+    <div class="canvas-column">
+      <WorkspaceTabs />
 
-    <svelte:boundary onerror={(err) => { console.error('ResultPanel error:', err) }}>
-      <ResultPanel
-        result={flowRunResult}
-        {selectedStepId}
-        selectedStep={selectedStep}
-      />
-    </svelte:boundary>
+      <div class="canvas-row">
+        <svelte:boundary onerror={(err) => { runError = `Canvas error: ${(err as Error).message}` }}>
+          {#if activeFlow}
+            <FlowCanvas
+              flow={activeFlow}
+              {logs}
+              result={flowRunResult ?? undefined}
+              {selectedStepId}
+              {validationErrors}
+              on:selectStep={e => selectedStepId = e.detail}
+              on:saveStep={e => {
+                if (activeCollection) collectionStore.updateStep(activeCollection.name, activeFlow!.id, e.detail)
+              }}
+              on:addStep={e => {
+                if (activeCollection) collectionStore.addStep(activeCollection.name, activeFlow!.id, e.detail)
+              }}
+            />
+          {:else}
+            <div class="empty-canvas">
+              <div class="empty-title">No collection open</div>
+              <div class="empty-hint">Open a .flowprobe.json file or drag one here</div>
+            </div>
+          {/if}
+          {#snippet failed()}
+            <div class="error-boundary-fallback">Canvas crashed — <button onclick={() => runStore.reset()}>Reset</button></div>
+          {/snippet}
+        </svelte:boundary>
+
+        <svelte:boundary onerror={(err) => { console.error('ResultPanel error:', err) }}>
+          <ResultPanel
+            result={flowRunResult}
+            {selectedStepId}
+            selectedStep={selectedStep}
+          />
+        </svelte:boundary>
+      </div>
+    </div>
   </div>
 
   <!-- Statusbar -->
@@ -314,6 +321,8 @@
     .confetti-bar { animation: none; }
   }
   .body { flex: 1; display: flex; overflow: hidden; }
+  .canvas-column { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+  .canvas-row { flex: 1; display: flex; overflow: hidden; }
   .empty-canvas { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; background: var(--bg); }
   .empty-title { font-size: var(--text-lg); font-weight: 600; color: var(--text-primary); }
   .empty-hint { font-size: var(--text-sm); color: var(--text-muted); }

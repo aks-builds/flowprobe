@@ -33,11 +33,14 @@
           aria-hidden="true"
         ></span>
         <span class="tab-name">{getFlowName(tab.collectionName, tab.flowId)}</span>
-        <button
+        <span
           class="tab-close"
+          role="button"
+          tabindex="0"
           aria-label="Close tab"
           onclick={(e) => { e.stopPropagation(); workspaceStore.closeTab(tab.id) }}
-        >✕</button>
+          onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.stopPropagation(); workspaceStore.closeTab(tab.id) } }}
+        >✕</span>
       </button>
     {/each}
   </div>
