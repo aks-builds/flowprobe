@@ -31,8 +31,10 @@
     collectionStore.setActive(e.detail.collectionName, e.detail.flowId)
   }
 
-  function handlePaletteSelect(e: CustomEvent<{ type: string; id: string; name: string; collection: string }>) {
-    collectionStore.setActive(e.detail.collection, e.detail.id)
+  function handlePaletteSelect(e: CustomEvent<{ type: string; id: string; name: string; collectionName?: string }>) {
+    if (e.detail.type === 'flow' && e.detail.collectionName) {
+      collectionStore.setActive(e.detail.collectionName, e.detail.id)
+    }
   }
 </script>
 
