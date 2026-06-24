@@ -1,5 +1,6 @@
 <!-- packages/desktop/src/lib/components/dock/ResultsTab.svelte -->
 <script lang="ts">
+  import { untrack } from 'svelte'
   import { fadeScale } from '../../design/animations.js'
   import { runStore } from '../../stores/collection.js'
 
@@ -7,15 +8,21 @@
   let sparkData = $state<Map<string, number[]>>(new Map())
   let runCount = $state(0)
 
-  // Update spark data when run completes
+  // Update spark data when run completes.
+  // Use untrack() to read sparkData without creating a reactive dependency,
+  // preventing the effect_update_depth_exceeded loop (common bug #2).
   $effect(() => {
     if ($runStore.state === 'done') {
-      runCount++
-      for (const r of $runStore.results) {
-        const prev = sparkData.get(r.id) ?? []
-        sparkData.set(r.id, [...prev.slice(-5), r.durationMs])
-      }
-      sparkData = new Map(sparkData) // trigger reactivity
+      const results = $runStore.results
+      untrack(() => {
+        runCount++
+        const next = new Map(sparkData)
+        for (const r of results) {
+          const prev = next.get(r.id) ?? []
+          next.set(r.id, [...prev.slice(-5), r.durationMs])
+        }
+        sparkData = next
+      })
     }
   })
 
