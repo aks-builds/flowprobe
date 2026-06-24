@@ -53,7 +53,7 @@
           stepType: step.type,
           label: `${step.type} — ${step.id}`,
           passed: result.passed,
-          expected: result.passed ? 'pass' : 'pass',
+          expected: 'pass',
           actual: result.passed ? 'pass' : result.error ?? 'failed',
         })
       }
