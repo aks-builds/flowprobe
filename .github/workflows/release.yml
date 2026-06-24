@@ -1,40 +1,136 @@
 name: Release
+
 on:
   push:
-    branches: ['__never__']
+    branches: [release]
   workflow_dispatch:
-    inputs:
-      bump:
-        description: Version bump type
-        required: true
-        type: choice
-        options: [patch, minor, major, prerelease]
+
 jobs:
-  release:
-    runs-on: ubuntu-latest
-    permissions: { contents: write, pull-requests: write }
+  # ─── Gate: E2E tests on Windows (WebView2 CDP) ───────────────────────────
+  e2e-gate:
+    name: E2E Gate (Windows)
+    runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
-        with: { token: '${{ secrets.APPROVER_PAT }}' }
+
       - uses: pnpm/action-setup@v4
-        with: { version: 9 }
+        with:
+          version: 9
+
       - uses: actions/setup-node@v4
-        with: { node-version: 22, cache: pnpm }
-      - run: pnpm install --frozen-lockfile
-      - name: Bump version + roll CHANGELOG
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: './packages/desktop/src-tauri -> target'
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Build Vite frontend
+        run: pnpm --filter @flowprobe/desktop build
+
+      - name: Build e2e-mock binary
+        run: cargo build --release --features e2e-mock
+        working-directory: packages/desktop/src-tauri
+
+      - name: Install Playwright browsers
+        run: npx playwright install chromium
+        working-directory: packages/desktop-e2e
+
+      - name: Run E2E tests
+        run: npx playwright test
+        working-directory: packages/desktop-e2e
+
+      - name: Upload Playwright report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report
+          path: packages/desktop-e2e/playwright-report/
+          retention-days: 7
+
+  # ─── Release: cross-platform build + publish ─────────────────────────────
+  release-build:
+    name: Release (${{ matrix.platform }})
+    needs: e2e-gate
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: windows-latest
+            args: ''
+          - platform: macos-latest
+            args: '--target universal-apple-darwin'
+          - platform: ubuntu-22.04
+            args: ''
+
+    runs-on: ${{ matrix.platform }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Linux WebKit dependencies
+        if: matrix.platform == 'ubuntu-22.04'
         run: |
-          npm version ${{ github.event.inputs.bump }} --no-git-tag-version
-          VERSION=$(node -p "require('./package.json').version")
-          sed -i "s/## \[Unreleased\]/## [Unreleased]\n\n## [$VERSION] - $(date +%F)/" CHANGELOG.md
-          git config user.name "aks-builds"
-          git config user.email "aks-builds@users.noreply.github.com"
-          git add package.json CHANGELOG.md
-          git commit -m "chore: release v$VERSION"
-          git push origin HEAD:release/v$VERSION
-      - name: Open PR
-        run: |
-          VERSION=$(node -p "require('./package.json').version")
-          gh pr create --base master --head release/v$VERSION \
-            --title "Release v$VERSION" --body "Automated release PR" \
-            --label release
-        env: { GH_TOKEN: '${{ secrets.APPROVER_PAT }}' }
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libappindicator3-dev \
+            librsvg2-dev \
+            patchelf
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
+
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: './packages/desktop/src-tauri -> target'
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Sync version (tauri.conf.json → package.json)
+        run: node scripts/sync-version.js
+
+      - name: Build and publish release
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        with:
+          projectPath: packages/desktop
+          tagName: v__VERSION__
+          releaseName: FlowProbe v__VERSION__
+          releaseBody: |
+            ## FlowProbe v__VERSION__
+
+            ### Downloads
+            - **Windows**: `FlowProbe_VERSION_x64-setup.exe` (NSIS, no admin required)
+            - **macOS**: `FlowProbe_VERSION_universal.dmg` (Apple Silicon + Intel)
+            - **Linux**: `FlowProbe_VERSION_amd64.AppImage` or `flowprobe_VERSION_amd64.deb`
+
+            > E2E tests passed before this release was built.
+          releaseDraft: true
+          prerelease: false
+          args: ${{ matrix.args }}
