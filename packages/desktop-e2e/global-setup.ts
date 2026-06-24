@@ -9,11 +9,10 @@ const BINARY = join(DESKTOP, `src-tauri/target/release/flowprobe${BINARY_EXT}`)
 const CDP_PORT = 9222
 
 // Try common cargo locations: CI PATH, then local Windows default
-const CARGO = (() => {
-  const local = 'C:/Users/AdityaKumarSingh/.cargo/bin/cargo.exe'
-  if (process.platform === 'win32' && existsSync(local)) return local
-  return 'cargo'
-})()
+const CARGO = process.env.CARGO ??
+  (process.platform === 'win32' && existsSync('C:/Users/AdityaKumarSingh/.cargo/bin/cargo.exe')
+    ? 'C:/Users/AdityaKumarSingh/.cargo/bin/cargo.exe'
+    : 'cargo')
 
 async function waitForCDP(port: number, timeout = 30_000): Promise<void> {
   const deadline = Date.now() + timeout
