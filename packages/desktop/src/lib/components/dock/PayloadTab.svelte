@@ -20,7 +20,7 @@
   }
 
   let payloadJson = $derived(selectedResult
-    ? JSON.stringify({ id: selectedResult.id, passed: selectedResult.passed, durationMs: selectedResult.durationMs, error: selectedResult.error }, null, 2)
+    ? JSON.stringify({ id: selectedResult.id, passed: selectedResult.passed, durationMs: selectedResult.durationMs, error: selectedResult.error, payload: selectedResult.payload ?? null }, null, 2)
     : null)
   let highlighted = $derived(payloadJson ? syntaxHighlight(payloadJson) : '')
 </script>

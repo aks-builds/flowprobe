@@ -1,7 +1,7 @@
 <script lang="ts">
   import { runStore } from '../../stores/collection.js'
   import { selectedNodeId } from '../../stores/topology.js'
-  import type { Flow, Step } from '@flowprobe/core'
+  import type { Flow } from '@flowprobe/core'
 
   let { activeFlow }: { activeFlow: Flow | null } = $props()
 
@@ -38,12 +38,12 @@
       const step = flow.steps.find(s => s.id === result.id)
       if (!step) continue
 
-      if (step.type === 'http-assert') {
+      if (step.type === 'http-assert' || step.type === 'db-assert' || step.type === 'message-assert') {
         for (const a of step.assertions ?? []) {
           out.push({
             stepId: step.id,
             stepType: step.type,
-            label: `${a.type}: ${String(a.expected)}`,
+            label: a.expected !== undefined ? `${a.type}: ${String(a.expected)}` : a.type,
             passed: result.passed,
             expected: a.expected,
             actual: result.passed ? a.expected : '(see error)',

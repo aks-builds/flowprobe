@@ -20,7 +20,6 @@
   })
 
   let results = $derived($runStore.results)
-  let maxRunDuration = $derived(results.length > 0 ? Math.max(...results.map(r => r.durationMs), 1) : 1)
 
   // Determine overall pass/fail and total duration from the last completed run
   let overallPassed = $derived(results.length > 0 ? results.every(r => r.passed) : null)
