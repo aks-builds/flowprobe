@@ -8,9 +8,11 @@
   let expandedId = $state<string | null>(null)
 
   // Find which step ID corresponds to the selected topology node
-  $: selectedStepId = $selectedNodeId
-    ? ($selectedNodeId === 'runner' ? null : $selectedNodeId.replace('node-', ''))
-    : null
+  let selectedStepId = $derived(
+    $selectedNodeId
+      ? ($selectedNodeId === 'runner' ? null : $selectedNodeId.replace('node-', ''))
+      : null
+  )
 
   type AssertionResult = {
     stepId: string
@@ -21,7 +23,7 @@
     actual: unknown
   }
 
-  $: assertionResults = buildAssertionResults(activeFlow, $runStore.results, selectedStepId)
+  let assertionResults = $derived(buildAssertionResults(activeFlow, $runStore.results, selectedStepId))
 
   function buildAssertionResults(
     flow: Flow | null,

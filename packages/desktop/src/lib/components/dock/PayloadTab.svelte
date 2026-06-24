@@ -2,8 +2,8 @@
   import { runStore } from '../../stores/collection.js'
   import { selectedNodeId } from '../../stores/topology.js'
 
-  $: selectedStepId = $selectedNodeId?.replace('node-', '') ?? null
-  $: selectedResult = $runStore.results.find(r => r.id === selectedStepId) ?? $runStore.results[0] ?? null
+  let selectedStepId = $derived($selectedNodeId?.replace('node-', '') ?? null)
+  let selectedResult = $derived($runStore.results.find(r => r.id === selectedStepId) ?? $runStore.results[0] ?? null)
 
   function syntaxHighlight(json: string): string {
     return json
@@ -19,10 +19,10 @@
       })
   }
 
-  $: payloadJson = selectedResult
+  let payloadJson = $derived(selectedResult
     ? JSON.stringify({ id: selectedResult.id, passed: selectedResult.passed, durationMs: selectedResult.durationMs, error: selectedResult.error }, null, 2)
-    : null
-  $: highlighted = payloadJson ? syntaxHighlight(payloadJson) : ''
+    : null)
+  let highlighted = $derived(payloadJson ? syntaxHighlight(payloadJson) : '')
 </script>
 
 <div class="payload-tab">

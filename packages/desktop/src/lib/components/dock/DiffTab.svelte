@@ -7,8 +7,8 @@
 
   let mode = $state<'expected-actual' | 'compare-runs'>('expected-actual')
 
-  $: currentResults = $runStore.results
-  $: previousResults = $diffStore.previous?.results ?? []
+  let currentResults = $derived($runStore.results)
+  let previousResults = $derived($diffStore.previous?.results ?? [])
 </script>
 
 <div class="diff-tab">

@@ -5,7 +5,7 @@
   import { onDestroy } from 'svelte'
   import Sidebar from '$lib/components/Sidebar.svelte'
   import FlowCanvas from '$lib/components/FlowCanvas.svelte'
-  import ResultPanel from '$lib/components/ResultPanel.svelte'
+  import AnalysisDock from '$lib/components/dock/AnalysisDock.svelte'
   import CommandPalette from '$lib/components/CommandPalette.svelte'
   import ErrorBanner from '$lib/components/ErrorBanner.svelte'
   import WorkspaceTabs from '$lib/components/WorkspaceTabs.svelte'
@@ -235,12 +235,8 @@
           {/snippet}
         </svelte:boundary>
 
-        <svelte:boundary onerror={(err) => { console.error('ResultPanel error:', err) }}>
-          <ResultPanel
-            result={flowRunResult}
-            {selectedStepId}
-            selectedStep={selectedStep}
-          />
+        <svelte:boundary onerror={(err) => { console.error('AnalysisDock error:', err) }}>
+          <AnalysisDock activeFlow={activeFlow ?? null} />
         </svelte:boundary>
       </div>
     </div>
