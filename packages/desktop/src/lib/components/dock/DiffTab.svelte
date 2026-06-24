@@ -9,8 +9,6 @@
 
   $: currentResults = $runStore.results
   $: previousResults = $diffStore.previous?.results ?? []
-
-  function statusClass(passed: boolean) { return passed ? 'pass' : 'fail' }
 </script>
 
 <div class="diff-tab">
