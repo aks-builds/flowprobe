@@ -35,7 +35,7 @@ jobs:
         run: pnpm --filter @flowprobe/desktop build
 
       - name: Build e2e-mock binary
-        run: cargo build --release --features e2e-mock
+        run: cargo build --release --features e2e-mock,custom-protocol
         working-directory: packages/desktop/src-tauri
 
       - name: Install Playwright browsers

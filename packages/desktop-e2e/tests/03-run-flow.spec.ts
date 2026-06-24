@@ -10,8 +10,7 @@ test('runs collection and shows pass result in status bar', async ({ appPage }) 
   // Stop button replaces run button during run
   await expect(appPage.locator('.btn-stop')).toBeVisible({ timeout: 5000 })
 
-  // Wait for run to complete — mock emits events with 80ms per step
-  // Fixture has 2 flows × 1 step each = 2 steps × 80ms ≈ 160ms + channel overhead
+  // mock emits events at 80ms/step for the active flow
   await expect(appPage.locator('.stbar')).toContainText('passed', { timeout: 10_000 })
 
   // Running indicator is gone

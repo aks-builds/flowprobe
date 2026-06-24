@@ -355,8 +355,6 @@ pub async fn run_collection(
     channel: tauri::ipc::Channel<RunEvent>,
     _registry: tauri::State<'_, crate::commands::broker::BrokerRegistry>,
 ) -> Result<(), String> {
-    use std::time::Instant;
-
     let collection: Collection = serde_json::from_str(&collection_json)
         .map_err(|e| format!("Invalid collection JSON: {e}"))?;
 
