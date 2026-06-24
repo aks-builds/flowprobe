@@ -49,21 +49,8 @@
     {/each}
   </nav>
 
-  <!-- Right group: env selector, run counter, run button -->
-  <div class="tb-right" data-tauri-drag-region="false">
-    <button class="env-chip" aria-label="Switch environment">
-      <span class="env-alive" aria-hidden="true"></span>
-      staging ▾
-    </button>
-
-    {#if $runStore.state !== 'idle'}
-      <span class="run-badge" aria-label="Run count">
-        #{$runStore.results.length > 0 ? 'N' : '0'}
-      </span>
-    {/if}
-
-    <slot name="run-btn" />
-  </div>
+  <!-- Right group: window controls spacer -->
+  <div class="tb-right" data-tauri-drag-region="false"></div>
 
   <!-- Window controls (Windows-style) -->
   <div class="wc" data-tauri-drag-region="false">
@@ -115,38 +102,7 @@
   }
   .tb-tab-icon { font-size: 12px; }
 
-  .tb-right { display: flex; align-items: center; gap: 8px; }
-
-  .env-chip {
-    padding: 4px 9px;
-    border-radius: 7px;
-    font-size: 10px;
-    background: rgba(255,255,255,.05);
-    color: var(--text-secondary, #475569);
-    border: 1px solid var(--border2, #1e1e32);
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    transition: background var(--dur-fast, 150ms);
-  }
-  .env-chip:hover { background: rgba(255,255,255,.08); }
-
-  .env-alive {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: var(--success, #22c55e);
-  }
-
-  .run-badge {
-    font-size: 9px;
-    color: var(--text-muted, #334155);
-    font-family: var(--font-mono, monospace);
-    background: rgba(255,255,255,.06);
-    padding: 2px 5px;
-    border-radius: 4px;
-  }
+  .tb-right { flex-shrink: 0; }
 
   .wc { display: flex; }
 
