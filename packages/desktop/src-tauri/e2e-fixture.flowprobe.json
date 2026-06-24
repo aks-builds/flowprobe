@@ -1,0 +1,40 @@
+{
+  "$schema": "https://flowprobe.dev/schema/v1.json",
+  "version": "1",
+  "name": "E2E Sample — HTTP Assert Flow",
+  "flows": [
+    {
+      "id": "http-echo-flow",
+      "name": "HTTP Echo Assert Flow",
+      "steps": [
+        {
+          "id": "assert-jsonplaceholder",
+          "type": "http-assert",
+          "method": "GET",
+          "url": "https://jsonplaceholder.typicode.com/todos/1",
+          "assertions": [
+            { "type": "status", "expected": 200 },
+            { "type": "jsonpath", "path": "$.id", "expected": 1 }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "http-post-flow",
+      "name": "HTTP POST Assert Flow",
+      "steps": [
+        {
+          "id": "create-post",
+          "type": "http-assert",
+          "method": "POST",
+          "url": "https://jsonplaceholder.typicode.com/posts",
+          "body": { "title": "FlowProbe E2E Test", "userId": 1 },
+          "assertions": [
+            { "type": "status", "expected": 201 },
+            { "type": "jsonpath", "path": "$.title", "expected": "FlowProbe E2E Test" }
+          ]
+        }
+      ]
+    }
+  ]
+}

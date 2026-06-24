@@ -259,6 +259,7 @@ async fn execute_step(
 // Tauri command
 // ---------------------------------------------------------------------------
 
+#[cfg(not(feature = "e2e-mock"))]
 #[tauri::command]
 pub async fn run_collection(
     collection_json: String,
@@ -342,6 +343,69 @@ pub async fn run_collection(
             duration_ms: run_start.elapsed().as_millis() as u64,
         })
         .map_err(|e| format!("Channel send error: {e}"))?;
+
+    Ok(())
+}
+
+#[cfg(feature = "e2e-mock")]
+#[tauri::command]
+pub async fn run_collection(
+    collection_json: String,
+    flow_id: Option<String>,
+    channel: tauri::ipc::Channel<RunEvent>,
+    _registry: tauri::State<'_, crate::commands::broker::BrokerRegistry>,
+) -> Result<(), String> {
+    use std::time::Instant;
+
+    let collection: Collection = serde_json::from_str(&collection_json)
+        .map_err(|e| format!("Invalid collection JSON: {e}"))?;
+
+    let run_start = Instant::now();
+    let flows: Vec<&Flow> = collection
+        .flows
+        .iter()
+        .filter(|f| flow_id.as_deref().map_or(true, |id| f.id == id))
+        .collect();
+
+    if flows.is_empty() {
+        let target = flow_id.as_deref().unwrap_or("(all)");
+        let _ = channel.send(RunEvent::Error {
+            message: format!("Flow '{target}' not found in collection"),
+        });
+        return Err(format!("Flow '{target}' not found"));
+    }
+
+    let mut total_passed = 0u32;
+
+    for flow in flows {
+        let flow_start = Instant::now();
+        for step in &flow.steps {
+            let id = step.id().to_string();
+            let step_type = step.type_name().to_string();
+            channel.send(RunEvent::StepStart { id: id.clone(), step_type: step_type.clone() })
+                .map_err(|e| format!("Channel send error: {e}"))?;
+            tokio::time::sleep(std::time::Duration::from_millis(80)).await;
+            channel.send(RunEvent::StepDone {
+                id,
+                step_type,
+                passed: true,
+                duration_ms: 80,
+                detail: "mock pass".to_string(),
+            }).map_err(|e| format!("Channel send error: {e}"))?;
+            total_passed += 1;
+        }
+        channel.send(RunEvent::FlowDone {
+            id: flow.id.clone(),
+            passed: true,
+            duration_ms: flow_start.elapsed().as_millis() as u64,
+        }).map_err(|e| format!("Channel send error: {e}"))?;
+    }
+
+    channel.send(RunEvent::RunDone {
+        passed: total_passed,
+        failed: 0,
+        duration_ms: run_start.elapsed().as_millis() as u64,
+    }).map_err(|e| format!("Channel send error: {e}"))?;
 
     Ok(())
 }

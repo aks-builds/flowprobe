@@ -1,3 +1,4 @@
+#[cfg(not(feature = "e2e-mock"))]
 #[tauri::command]
 pub async fn open_collection_dialog(app: tauri::AppHandle) -> Result<Option<String>, String> {
     use tauri_plugin_dialog::DialogExt;
@@ -17,4 +18,10 @@ pub async fn open_collection_dialog(app: tauri::AppHandle) -> Result<Option<Stri
         }
         None => Ok(None), // user cancelled
     }
+}
+
+#[cfg(feature = "e2e-mock")]
+#[tauri::command]
+pub async fn open_collection_dialog(_app: tauri::AppHandle) -> Result<Option<String>, String> {
+    Ok(Some(include_str!("../../e2e-fixture.flowprobe.json").to_string()))
 }
