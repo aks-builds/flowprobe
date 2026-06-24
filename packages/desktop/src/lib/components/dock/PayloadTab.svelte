@@ -6,7 +6,11 @@
   let selectedResult = $derived($runStore.results.find(r => r.id === selectedStepId) ?? $runStore.results[0] ?? null)
 
   function syntaxHighlight(json: string): string {
-    return json
+    const escaped = json
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+    return escaped
       .replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, match => {
         if (/^"/.test(match)) {
           return /:$/.test(match)
