@@ -15,6 +15,9 @@ name = "flowprobe_desktop_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [features]
+# Enable the Tauri custom-protocol feature for release builds so the app
+# serves the bundled frontend instead of the dev server URL.
+custom-protocol = ["tauri/custom-protocol"]
 e2e-mock = []
 
 [build-dependencies]
