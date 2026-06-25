@@ -1,6 +1,6 @@
 [package]
 name = "flowprobe-desktop"
-version = "0.1.0"
+version = "1.0.0"
 description = "FlowProbe — event-driven system testing"
 authors = ["aks-builds"]
 edition = "2021"

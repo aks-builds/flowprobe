@@ -2,6 +2,7 @@
 <script lang="ts">
   import { invoke } from '@tauri-apps/api/core'
   import { Channel } from '@tauri-apps/api/core'
+  import { getVersion } from '@tauri-apps/api/app'
   import { onDestroy, onMount } from 'svelte'
   import Sidebar from '$lib/components/Sidebar.svelte'
   import FlowCanvas from '$lib/components/FlowCanvas.svelte'
@@ -17,6 +18,9 @@
   import type { Collection } from '@flowprobe/core'
   import { parseCollection } from '@flowprobe/core/schema'
   import type { LogEntry } from '$lib/components/EventStreamDrawer.svelte'
+
+  // ── App version ──
+  let appVersion = '...'
 
   // ── Run state ──
   let runError: string | null = null
@@ -37,6 +41,7 @@
   onMount(() => {
     historyStore.load()
     environmentStore.load()
+    getVersion().then(v => appVersion = v).catch(() => {})
   })
 
   $: activeCollection = collections.find(c => c.name === $collectionStore.activeCollectionId)
@@ -267,7 +272,7 @@
 
   <!-- Statusbar -->
   <div class="stbar">
-    <span class="st-item">⚡ v1.0.0</span>
+    <span class="st-item">⚡ v{appVersion}</span>
     <span class="st-sep"></span>
     <span class="st-item">{collections.length} collection{collections.length !== 1 ? 's' : ''}</span>
     {#if isRunning}
