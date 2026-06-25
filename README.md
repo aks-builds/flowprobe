@@ -83,6 +83,27 @@ Download the latest `.msi` (Windows), `.dmg` (macOS), or `.AppImage` (Linux) fro
 
 ---
 
+## Download
+
+| Platform | File | Notes |
+|---|---|---|
+| Windows | `FlowProbe_VERSION_x64-setup.exe` | NSIS installer, no admin required |
+| macOS | `FlowProbe_VERSION_universal.dmg` | Universal binary (Apple Silicon + Intel) |
+| Linux | `FlowProbe_VERSION_amd64.AppImage` | Portable, no install needed |
+| Linux | `flowprobe_VERSION_amd64.deb` | For Ubuntu/Debian |
+
+Download from [GitHub Releases](https://github.com/aks-builds/flowprobe/releases).
+
+### macOS first-run note
+
+If macOS blocks the app on first launch, right-click → Open → Open to bypass Gatekeeper (one-time only).
+
+### Windows SmartScreen note
+
+Until the app is code-signed with an EV certificate, Windows SmartScreen may show a warning. Click "More info" → "Run anyway".
+
+---
+
 ## Quick start
 
 ```bash
