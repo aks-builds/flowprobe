@@ -2,7 +2,7 @@
 <script lang="ts">
   import { invoke } from '@tauri-apps/api/core'
   import { Channel } from '@tauri-apps/api/core'
-  import { onDestroy } from 'svelte'
+  import { onDestroy, onMount } from 'svelte'
   import Sidebar from '$lib/components/Sidebar.svelte'
   import FlowCanvas from '$lib/components/FlowCanvas.svelte'
   import AnalysisDock from '$lib/components/dock/AnalysisDock.svelte'
@@ -11,6 +11,8 @@
   import WorkspaceTabs from '$lib/components/WorkspaceTabs.svelte'
   import { collectionStore, runStore, validateFlow, type ValidationError } from '$lib/stores/collection.js'
   import { workspaceStore } from '$lib/stores/workspace.js'
+  import { historyStore } from '$lib/stores/history.js'
+  import { environmentStore } from '$lib/stores/environments.js'
   import type { Collection } from '@flowprobe/core'
   import { parseCollection } from '@flowprobe/core/schema'
   import type { LogEntry } from '$lib/components/EventStreamDrawer.svelte'
@@ -29,6 +31,8 @@
   let logs: LogEntry[] = []
 
   collectionStore.subscribe(s => { collections = s.collections })
+
+  onMount(() => { historyStore.load() })
 
   $: activeCollection = collections.find(c => c.name === $collectionStore.activeCollectionId)
   $: activeFlow = activeCollection?.flows.find(f => f.id === $collectionStore.activeFlowId) ?? activeCollection?.flows[0]
@@ -90,6 +94,19 @@
       }
       if (event.type === 'runDone') {
         runStore.finishRun()
+        if (activeFlow && activeCollection) {
+          historyStore.record({
+            runId: crypto.randomUUID(),
+            flowId: activeFlow.id,
+            flowName: activeFlow.name,
+            collectionName: activeCollection.name,
+            environment: $environmentStore.activeId,
+            startedAt: new Date().toISOString(),
+            durationMs: (event.duration_ms ?? event.durationMs) as number,
+            passed: (event.passed) as number,
+            failed: (event.failed) as number,
+          })
+        }
         const failed = event.failed as number
         if (failed === 0) {
           showConfetti = true
