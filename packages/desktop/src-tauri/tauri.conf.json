@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "FlowProbe",
-  "version": "0.1.0",
-  "identifier": "dev.flowprobe.app",
+  "version": "1.0.0",
+  "identifier": "com.flowprobe.app",
   "build": {
     "beforeDevCommand": "pnpm dev",
     "devUrl": "http://localhost:1420",
@@ -19,7 +19,8 @@
         "minWidth": 900,
         "minHeight": 600,
         "decorations": false,
-        "transparent": false
+        "transparent": false,
+        "center": true
       }
     ],
     "security": {
@@ -35,6 +36,22 @@
       "icons/128x128@2x.png",
       "icons/icon.icns",
       "icons/icon.ico"
-    ]
+    ],
+    "windows": {
+      "webviewInstallMode": { "type": "embedBootstrapper" },
+      "nsis": {
+        "displayLanguageSelector": false,
+        "installMode": "currentUser"
+      }
+    },
+    "macOS": {
+      "signingIdentity": null,
+      "entitlements": null
+    },
+    "linux": {
+      "deb": {
+        "depends": ["libwebkit2gtk-4.1-0", "libappindicator3-1"]
+      }
+    }
   }
 }
