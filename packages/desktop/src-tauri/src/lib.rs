@@ -1,10 +1,12 @@
 pub mod commands {
     pub mod broker;
+    pub mod config;
     pub mod file;
     pub mod run;
 }
 
 use commands::broker::{connect_broker, disconnect_broker, ping_broker, BrokerRegistry};
+use commands::config::{read_app_config, write_app_config};
 use commands::file::open_collection_dialog;
 use commands::run::run_collection;
 
@@ -27,6 +29,8 @@ pub fn run() {
             ping_broker,
             run_collection,
             open_collection_dialog,
+            read_app_config,
+            write_app_config,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
