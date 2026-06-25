@@ -2,4 +2,4 @@
 // Import tokens.css globally in your app layout:
 // import '$lib/design/tokens.css'
 
-export { fadeScale, shake, shimmer, pulseBorder } from './animations.js'
+export { fadeScale, slideUp, springPop, shake, shimmer, pulseBorder } from './animations.js'

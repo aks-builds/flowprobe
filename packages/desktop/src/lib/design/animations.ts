@@ -1,26 +1,50 @@
-import type { TransitionConfig } from 'svelte/transition'
+import { cubicOut } from 'svelte/easing'
 
 /** Returns true when the user has requested reduced motion. */
 function prefersReducedMotion(): boolean {
+  if (typeof window === 'undefined') return false
   return window.matchMedia('(prefers-reduced-motion: reduce)').matches
 }
 
-/**
- * Svelte custom transition: fade + scale entrance.
- * Usage: `<div transition:fadeScale>…</div>`
- */
+type TransitionParams = { duration?: number; delay?: number }
+
+/** Fade + scale in. 0ms if prefers-reduced-motion. */
 export function fadeScale(
-  node: Element,
-  { duration = 200, delay = 0 }: { duration?: number; delay?: number } = {}
-): TransitionConfig {
-  if (prefersReducedMotion()) return { duration: 0 }
+  _node: Element,
+  { duration = 200, delay = 0 }: TransitionParams = {}
+) {
+  const d = prefersReducedMotion() ? 0 : duration
   return {
-    duration,
+    duration: d,
     delay,
-    css: (t: number) => `
-      opacity: ${t};
-      transform: scale(${0.95 + 0.05 * t});
-    `
+    css: (t: number) => `opacity: ${t}; transform: scale(${0.92 + 0.08 * t})`,
+  }
+}
+
+/** Slide up from 6px. 0ms if prefers-reduced-motion. */
+export function slideUp(
+  _node: Element,
+  { duration = 150, delay = 0 }: TransitionParams = {}
+) {
+  const d = prefersReducedMotion() ? 0 : duration
+  return {
+    duration: d,
+    delay,
+    easing: cubicOut,
+    css: (t: number) => `opacity: ${t}; transform: translateY(${(1 - t) * 6}px)`,
+  }
+}
+
+/** Spring pop — for badges and tooltips. 0ms if prefers-reduced-motion. */
+export function springPop(
+  _node: Element,
+  { duration = 180, delay = 0 }: TransitionParams = {}
+) {
+  const d = prefersReducedMotion() ? 0 : duration
+  return {
+    duration: d,
+    delay,
+    css: (t: number) => `opacity: ${t}; transform: scale(${0.88 + 0.12 * t})`,
   }
 }
 
