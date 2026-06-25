@@ -58,3 +58,61 @@ describe('FlowRunner', () => {
     expect(result.flows[0].steps[0].error).toContain('Broker unavailable')
   })
 })
+
+describe('beforeScript / afterScript hooks', () => {
+  const makeCollection = (scriptField: 'beforeScript' | 'afterScript', script: string): Collection => ({
+    version: '1',
+    name: 'hook-test',
+    flows: [{
+      id: 'f1',
+      name: 'Test Flow',
+      steps: [{
+        id: 's1',
+        type: 'producer' as const,
+        broker: 'test-broker',
+        topic: 'test-topic',
+        payload: { key: 'value' },
+        [scriptField]: script,
+      }],
+    }],
+  })
+
+  const makeRunner = () => {
+    const runner = new FlowRunner()
+    runner.setAdapterRegistry(new Map([
+      ['test-broker', {
+        produce: vi.fn().mockResolvedValue({ offset: '0' }),
+        close: vi.fn(),
+      }]
+    ]))
+    return runner
+  }
+
+  it('beforeScript with no throw passes the step', async () => {
+    const runner = makeRunner()
+    const result = await runner.run(makeCollection('beforeScript', 'var x = 1'), { vars: {} })
+    expect(result.passed).toBe(1)
+    expect(result.failed).toBe(0)
+  })
+
+  it('beforeScript throwing fails the step', async () => {
+    const runner = makeRunner()
+    const result = await runner.run(makeCollection('beforeScript', 'throw new Error("precondition failed")'), { vars: {} })
+    expect(result.failed).toBe(1)
+    expect(result.flows[0].steps[0].error).toContain('precondition failed')
+  })
+
+  it('afterScript with no throw passes the step', async () => {
+    const runner = makeRunner()
+    const result = await runner.run(makeCollection('afterScript', 'var y = 2'), { vars: {} })
+    expect(result.passed).toBe(1)
+    expect(result.failed).toBe(0)
+  })
+
+  it('afterScript throwing fails the step', async () => {
+    const runner = makeRunner()
+    const result = await runner.run(makeCollection('afterScript', 'throw new Error("postcondition failed")'), { vars: {} })
+    expect(result.failed).toBe(1)
+    expect(result.flows[0].steps[0].error).toContain('postcondition failed')
+  })
+})

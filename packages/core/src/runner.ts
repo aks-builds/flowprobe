@@ -1,6 +1,7 @@
 // packages/core/src/runner.ts
 import { EventEmitter } from 'node:events'
 import { randomUUID } from 'node:crypto'
+import { runInNewContext } from 'node:vm'
 import { interpolate } from './interpolator.js'
 import type { Collection, Flow, Step } from './schema.js'
 import type { InterpolationContext } from './interpolator.js'
@@ -53,6 +54,10 @@ export class FlowRunner extends EventEmitter {
 
   setAdapterRegistry(registry: Map<string, BrokerAdapter>): void {
     this.adapterRegistry = registry
+  }
+
+  private runScript(script: string, ctx: Record<string, unknown>): void {
+    runInNewContext(script, ctx)
   }
 
   async run(collection: Collection, opts: RunOptions): Promise<RunResult> {
@@ -126,7 +131,13 @@ export class FlowRunner extends EventEmitter {
     const start = Date.now()
     this.emit('step:start', { id: step.id, type: step.type })
     try {
-      const interpolatedStep = interpolate(step, ctx) as Step
+      const interpolatedStep = interpolate(step, ctx) as Step & { beforeScript?: string; afterScript?: string }
+
+      if (interpolatedStep.beforeScript) {
+        this.runScript(interpolatedStep.beforeScript, { vars: ctx.vars, steps: ctx.steps, runId: ctx.runId })
+      }
+
+      let result: StepRunResult
 
       if (interpolatedStep.type === 'producer') {
         const adapter = this.adapterRegistry.get(interpolatedStep.broker)
@@ -138,16 +149,14 @@ export class FlowRunner extends EventEmitter {
           interpolatedStep.payload,
           interpolatedStep.headers
         )
-        return {
+        result = {
           id: step.id,
           type: step.type,
           passed: true,
           durationMs: Date.now() - start,
           payload,
         }
-      }
-
-      if (interpolatedStep.type === 'wait') {
+      } else if (interpolatedStep.type === 'wait') {
         const adapter = this.adapterRegistry.get(interpolatedStep.consumer.broker)
         if (!adapter) {
           throw new Error(`No adapter registered for broker: ${interpolatedStep.consumer.broker}`)
@@ -162,17 +171,15 @@ export class FlowRunner extends EventEmitter {
           interpolatedStep.consumer.groupId,
           interpolatedStep.timeoutMs
         )
-        return {
+        result = {
           id: step.id,
           type: step.type,
           passed: true,
           durationMs: Date.now() - start,
           payload: message,
         }
-      }
-
-      // http-assert, db-assert, message-assert are delegated to the assertionHandler
-      if (
+      } else if (
+        // http-assert, db-assert, message-assert are delegated to the assertionHandler
         interpolatedStep.type === 'http-assert' ||
         interpolatedStep.type === 'db-assert' ||
         interpolatedStep.type === 'message-assert'
@@ -182,21 +189,27 @@ export class FlowRunner extends EventEmitter {
             `Step type '${interpolatedStep.type}' requires an assertionHandler in RunOptions`
           )
         }
-        const result = await this.assertionHandler(interpolatedStep, ctx)
-        return {
+        const r = await this.assertionHandler(interpolatedStep, ctx)
+        result = {
           id: step.id,
           type: step.type,
-          passed: result.passed,
+          passed: r.passed,
           durationMs: Date.now() - start,
-          error: result.error,
-          payload: result.payload,
+          error: r.error,
+          payload: r.payload,
         }
+      } else {
+        throw new Error(
+          `Step type '${(interpolatedStep as Step).type}' is not handled by the runner — ` +
+            `register an assertion adapter or handle this step type externally`
+        )
       }
 
-      throw new Error(
-        `Step type '${(interpolatedStep as Step).type}' is not handled by the runner — ` +
-          `register an assertion adapter or handle this step type externally`
-      )
+      if (result.passed && interpolatedStep.afterScript) {
+        this.runScript(interpolatedStep.afterScript, { vars: ctx.vars, steps: ctx.steps, runId: ctx.runId, result })
+      }
+
+      return result
     } catch (err) {
       return {
         id: step.id,

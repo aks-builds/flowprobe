@@ -19,6 +19,8 @@ const ProducerStepSchema = z.object({
   payload: z.record(z.unknown()),
   headers: z.record(z.string()).optional(),
   partition: z.number().optional(),
+  beforeScript: z.string().optional(),
+  afterScript: z.string().optional(),
 })
 
 const WaitStepSchema = z.object({
@@ -31,6 +33,8 @@ const WaitStepSchema = z.object({
     topic: z.string(),
     groupId: z.string(),
   }),
+  beforeScript: z.string().optional(),
+  afterScript: z.string().optional(),
 })
 
 const HttpAssertStepSchema = z.object({
@@ -41,6 +45,8 @@ const HttpAssertStepSchema = z.object({
   body: z.record(z.unknown()).optional(),
   headers: z.record(z.string()).optional(),
   assertions: z.array(AssertionSchema),
+  beforeScript: z.string().optional(),
+  afterScript: z.string().optional(),
 })
 
 const DbAssertStepSchema = z.object({
@@ -50,6 +56,8 @@ const DbAssertStepSchema = z.object({
   query: z.string(),
   params: z.array(z.string()).default([]),
   assertions: z.array(AssertionSchema),
+  beforeScript: z.string().optional(),
+  afterScript: z.string().optional(),
 })
 
 const MessageAssertStepSchema = z.object({
@@ -59,6 +67,8 @@ const MessageAssertStepSchema = z.object({
   topic: z.string(),
   timeoutMs: z.number().default(3000),
   assertions: z.array(AssertionSchema),
+  beforeScript: z.string().optional(),
+  afterScript: z.string().optional(),
 })
 
 const StepSchema = z.discriminatedUnion('type', [
