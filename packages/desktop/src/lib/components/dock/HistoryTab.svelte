@@ -1,7 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte'
   import { historyStore } from '../../stores/history.js'
-  import { dockTabStore } from '../../stores/dock.js'
 
   onMount(() => historyStore.load())
 </script>
