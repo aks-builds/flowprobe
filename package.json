@@ -1,9 +1,13 @@
 {
   "name": "flowprobe-monorepo",
   "private": true,
-  "version": "0.1.0",
-  "engines": { "node": ">=22.0.0", "pnpm": ">=9.0.0" },
+  "version": "1.0.0",
+  "engines": {
+    "node": ">=22.0.0",
+    "pnpm": ">=9.0.0"
+  },
   "scripts": {
+    "prerelease": "node scripts/sync-version.js",
     "build": "pnpm -r build",
     "test": "pnpm -r test",
     "test:e2e": "pnpm --filter @flowprobe/desktop-e2e test",
