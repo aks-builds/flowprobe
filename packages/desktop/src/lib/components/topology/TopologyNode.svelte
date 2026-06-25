@@ -106,7 +106,7 @@
     inset: -3px;
     border-radius: 50%;
     border: 2px solid;
-    animation: pr 1.8s ease-out infinite;
+    animation: pr var(--dur-crawl) ease-out infinite;
     pointer-events: none;
   }
   @keyframes pr {

@@ -62,7 +62,7 @@
   .drawer { background: #0f172a; flex-shrink: 0; border-top: 1px solid rgba(255,255,255,.06); transition: height var(--dur-fast) ease; }
   .drawer-header { display: flex; align-items: center; gap: 7px; padding: 5px 14px; cursor: pointer; border-bottom: 1px solid rgba(255,255,255,.04); }
   .drawer-title { font-size: 9px; font-weight: 700; color: #334155; text-transform: uppercase; letter-spacing: .08em; font-family: var(--font-mono); flex: 1; }
-  .live-badge { font-size: 8px; background: rgba(59,130,246,.2); color: #60a5fa; padding: 1px 6px; border-radius: 8px; animation: live-blink 1.5s ease-in-out infinite; }
+  .live-badge { font-size: 8px; background: rgba(59,130,246,.2); color: #60a5fa; padding: 1px 6px; border-radius: 8px; animation: live-blink var(--dur-crawl) ease-in-out infinite; }
   @keyframes live-blink { 0%,100%{opacity:1} 50%{opacity:.4} }
   .toggle-arrow { font-size: 9px; color: #334155; }
   .log { height: 88px; overflow-y: auto; padding: 5px 14px 7px; scrollbar-width: thin; scrollbar-color: #1e293b #0f172a; }
@@ -71,7 +71,7 @@
   .msg { flex: 1; }
   .empty { font-size: 9px; color: #334155; font-family: var(--font-mono); padding: 4px 0; }
   .cursor-line { font-size: 9px; color: #475569; font-family: var(--font-mono); }
-  .cursor { animation: cblink 1s step-end infinite; }
+  .cursor { animation: cblink var(--dur-slow) step-end infinite; }
   @keyframes cblink { 0%,100%{opacity:1} 50%{opacity:0} }
   @media (prefers-reduced-motion: reduce) {
     .live-badge { animation: none; }

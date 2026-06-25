@@ -150,7 +150,7 @@
     display: flex; align-items: center; justify-content: center;
     z-index: 9999;
     opacity: 1;
-    transition: opacity 200ms ease-out;
+    transition: opacity var(--dur-normal) ease-out;
   }
   .splash.fading { opacity: 0; }
 
@@ -168,7 +168,7 @@
     position: absolute; inset: -10px; border-radius: 30px;
     background: radial-gradient(circle, rgba(99,102,241,.18) 0%, transparent 70%);
     opacity: 0; transform: scale(0.7);
-    transition: opacity 400ms, transform 400ms cubic-bezier(0.175,0.885,0.32,1.275);
+    transition: opacity var(--dur-slow), transform var(--dur-slow) cubic-bezier(0.175,0.885,0.32,1.275);
   }
   .logo-glow.glow-vis { opacity: 1; transform: scale(1); }
 
@@ -181,7 +181,7 @@
     stroke-dashoffset: 0;
     transition: stroke-dashoffset 700ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
   }
-  .wave-dot { opacity: 0; transition: opacity 200ms; }
+  .wave-dot { opacity: 0; transition: opacity var(--dur-normal); }
   .wave-dot.wave-dot-vis { opacity: 1; }
 
   /* ── Title ── */
@@ -198,7 +198,7 @@
 
   .tagline {
     font-size: 11px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase;
-    color: #334155; opacity: 0; transition: opacity 300ms;
+    color: #334155; opacity: 0; transition: opacity var(--dur-normal);
     margin-bottom: 28px;
   }
   .tagline.tagline-vis { opacity: 1; }
@@ -212,7 +212,7 @@
     display: flex; flex-direction: column; align-items: center; gap: 4px;
     padding: 7px 9px; border-radius: 10px; border: 1.5px solid transparent;
     opacity: 0; transform: scale(0.75) translateY(10px);
-    transition: opacity 300ms, transform 300ms cubic-bezier(0.175,0.885,0.32,1.275);
+    transition: opacity var(--dur-normal), transform var(--dur-normal) cubic-bezier(0.175,0.885,0.32,1.275);
   }
   .flow-node.node-vis { opacity: 1; transform: scale(1) translateY(0); }
 
@@ -225,7 +225,7 @@
   .flow-edge {
     width: 22px; height: 1.5px;
     background: rgba(99,102,241,.35);
-    opacity: 0; transition: opacity 250ms; flex-shrink: 0;
+    opacity: 0; transition: opacity var(--dur-normal); flex-shrink: 0;
   }
   .flow-edge.edge-vis { opacity: 1; }
 
@@ -233,7 +233,7 @@
   .progress {
     width: 200px; height: 2.5px;
     background: rgba(255,255,255,.08); border-radius: 2px; overflow: hidden;
-    opacity: 0; transition: opacity 300ms;
+    opacity: 0; transition: opacity var(--dur-normal);
   }
   .progress.prog-vis { opacity: 1; }
 
