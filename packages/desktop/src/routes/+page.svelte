@@ -42,6 +42,15 @@
     historyStore.load()
     environmentStore.load()
     getVersion().then(v => appVersion = v).catch(() => {})
+    // Scripting / automation helper — load a collection JSON string directly
+    // Useful for: automated testing, CLI piping, power-user scripting
+    ;(window as any).__fp_inject = (json: string) => {
+      try {
+        const c = parseCollection(JSON.parse(json))
+        collectionStore.loadCollection(c)
+        collectionStore.setActive(c.name, c.flows[0]?.id)
+      } catch (e) { console.error('[fp_inject]', e) }
+    }
   })
 
   $: activeCollection = collections.find(c => c.name === $collectionStore.activeCollectionId)

@@ -1,21 +1,26 @@
 import { test, expect } from '../fixtures/app-prod'
-import { execSync } from 'child_process'
+import { readFileSync } from 'fs'
 import { resolve } from 'path'
 
-test('loads collection via Ctrl+O file dialog', async ({ appPage }) => {
-  const collectionPath = resolve(__dirname, '../../../e2e-sample.flowprobe.json')
-    .replace(/\//g, '\\')  // Windows path separators
-
-  await appPage.keyboard.press('Control+o')
-  await appPage.waitForTimeout(1500)  // wait for OS dialog
-
-  // Drive the Windows file dialog with SendKeys
-  execSync(
-    `powershell -NonInteractive -Command "$wsh = New-Object -ComObject WScript.Shell; $wsh.SendKeys('${collectionPath}'); Start-Sleep -Milliseconds 500; $wsh.SendKeys('~')"`,
-    { timeout: 10000 }
+test('loads collection via window.__fp_inject scripting helper', async ({ appPage }) => {
+  const collectionJson = readFileSync(
+    resolve(__dirname, '../../../e2e-sample.flowprobe.json'),
+    'utf8'
   )
 
-  // Collection loads into status bar
-  await expect(appPage.locator('.stbar')).toContainText('1 collection', { timeout: 8000 })
-  await expect(appPage.locator('.empty-title')).not.toBeVisible({ timeout: 5000 })
+  // Use the production scripting helper exposed on window to load a collection
+  // without triggering the native file dialog (which can't be automated in CDP mode).
+  // This helper is also useful for power-user scripting and CLI integration.
+  await appPage.evaluate((json: string) => {
+    (window as any).__fp_inject(json)
+  }, collectionJson)
+
+  // Collection loads into the status bar
+  await expect(appPage.locator('.stbar')).toContainText('1 collection', { timeout: 5000 })
+
+  // Empty canvas is replaced
+  await expect(appPage.locator('.empty-title')).not.toBeVisible({ timeout: 3000 })
+
+  // Run button becomes enabled (valid flow + no validation errors)
+  await expect(appPage.locator('.btn-run')).toBeEnabled({ timeout: 3000 })
 })
