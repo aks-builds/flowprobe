@@ -1,22 +1,26 @@
 <script lang="ts">
   import { onMount } from 'svelte'
-  import { invoke } from '@tauri-apps/api/core'
+  import { check } from '@tauri-apps/plugin-updater'
+  import { relaunch } from '@tauri-apps/plugin-process'
 
   let availableVersion = $state<string | null>(null)
   let installing = $state(false)
 
   onMount(async () => {
-    // Check on startup, silently fail if offline
     try {
-      const version = await invoke<string | null>('plugin:updater|check')
-      availableVersion = version
+      const update = await check()
+      if (update?.available) availableVersion = update.version
     } catch { /* offline or no update */ }
   })
 
   async function installUpdate() {
     installing = true
     try {
-      await invoke('plugin:updater|install')
+      const update = await check()
+      if (update?.available) {
+        await update.downloadAndInstall()
+        await relaunch()
+      }
     } catch (e) {
       console.error('Update failed:', e)
       installing = false
