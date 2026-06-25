@@ -1,8 +1,5 @@
 <script lang="ts">
-  import { onMount } from 'svelte'
   import { historyStore } from '../../stores/history.js'
-
-  onMount(() => historyStore.load())
 </script>
 
 <div class="history-tab">

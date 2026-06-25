@@ -11,6 +11,9 @@ pub async fn read_app_config(
     filename: String,
     app: tauri::AppHandle,
 ) -> Result<Option<String>, String> {
+    if filename.contains('/') || filename.contains('\\') || filename.contains("..") {
+        return Err("Invalid filename".into());
+    }
     let path = config_dir(&app)?.join(&filename);
     if !path.exists() {
         return Ok(None);
@@ -26,6 +29,9 @@ pub async fn write_app_config(
     content: String,
     app: tauri::AppHandle,
 ) -> Result<(), String> {
+    if filename.contains('/') || filename.contains('\\') || filename.contains("..") {
+        return Err("Invalid filename".into());
+    }
     let dir = config_dir(&app)?;
     std::fs::create_dir_all(&dir)
         .map_err(|e| format!("Cannot create config dir: {e}"))?;

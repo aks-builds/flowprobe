@@ -23,6 +23,7 @@
   let showConfetti = false
   let confettiTimer: ReturnType<typeof setTimeout> | null = null
   let isStopped = false
+  let runStartedAt: string | null = null
   // ── App state ──
   let paletteOpen = false
   let selectedStepId: string | null = null
@@ -77,6 +78,7 @@
     logs = []
     isStopped = false
     runStore.startRun()
+    runStartedAt = new Date().toISOString()
     activeRunCount++
 
     const channel = new Channel<{ type: string; [key: string]: unknown }>()
@@ -101,7 +103,7 @@
             flowName: activeFlow.name,
             collectionName: activeCollection.name,
             environment: $environmentStore.activeId,
-            startedAt: new Date().toISOString(),
+            startedAt: runStartedAt ?? new Date().toISOString(),
             durationMs: (event.duration_ms ?? event.durationMs) as number,
             passed: (event.passed) as number,
             failed: (event.failed) as number,

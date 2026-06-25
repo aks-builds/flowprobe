@@ -22,7 +22,7 @@ type AssertResult = { passed: boolean; error?: string }
 export function evaluateDbAssertions(rows: Record<string, unknown>[], assertions: DbAssertion[]): AssertResult {
   for (const a of assertions) {
     if (a.type === 'rowCount') {
-      if (rows.length !== a.expected) {
+      if (rows.length !== Number(a.expected)) {
         return { passed: false, error: `rowCount: expected ${a.expected}, got ${rows.length}` }
       }
     } else if (a.type === 'cellValue') {

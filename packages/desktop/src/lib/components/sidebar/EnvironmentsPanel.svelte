@@ -66,7 +66,7 @@
               {:else}
                 {v.value}
                 {#if v.secret}
-                  <button class="reveal" onclick={() => delete showSecrets[env.name + v.key]} aria-label="Hide {v.key}">🙈</button>
+                  <button class="reveal" onclick={() => { const { [env.name + v.key]: _, ...rest } = showSecrets; showSecrets = rest }} aria-label="Hide {v.key}">🙈</button>
                 {/if}
               {/if}
             </span>
