@@ -8,6 +8,7 @@
   import AnalysisDock from '$lib/components/dock/AnalysisDock.svelte'
   import CommandPalette from '$lib/components/CommandPalette.svelte'
   import ErrorBanner from '$lib/components/ErrorBanner.svelte'
+  import UpdateBanner from '$lib/components/UpdateBanner.svelte'
   import WorkspaceTabs from '$lib/components/WorkspaceTabs.svelte'
   import { collectionStore, runStore, validateFlow, type ValidationError } from '$lib/stores/collection.js'
   import { workspaceStore } from '$lib/stores/workspace.js'
@@ -280,6 +281,7 @@
       </span>
     {/if}
     <span class="st-sep" style="margin-left:auto"></span>
+    <UpdateBanner />
     <span class="st-item" style="color:var(--text-muted);font-family:var(--font-mono);font-size:9px">Ctrl+K</span>
   </div>
 </div>
