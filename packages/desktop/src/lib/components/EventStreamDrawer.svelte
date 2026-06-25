@@ -59,7 +59,7 @@
 </div>
 
 <style>
-  .drawer { background: #0f172a; flex-shrink: 0; border-top: 1px solid rgba(255,255,255,.06); transition: height var(--dur-fast) ease; }
+  .drawer { background: #0f172a; flex-shrink: 0; border-top: 1px solid rgba(255,255,255,.06); }
   .drawer-header { display: flex; align-items: center; gap: 7px; padding: 5px 14px; cursor: pointer; border-bottom: 1px solid rgba(255,255,255,.04); }
   .drawer-title { font-size: 9px; font-weight: 700; color: #334155; text-transform: uppercase; letter-spacing: .08em; font-family: var(--font-mono); flex: 1; }
   .live-badge { font-size: 8px; background: rgba(59,130,246,.2); color: #60a5fa; padding: 1px 6px; border-radius: 8px; animation: live-blink var(--dur-crawl) ease-in-out infinite; }

@@ -59,7 +59,7 @@
             <div class="timing-track">
               <div
                 class="timing-fill"
-                style="width:{(step.durationMs / maxDuration) * 100}%;background:{step.passed ? 'var(--accent)' : 'var(--error)'}"
+                style="transform:scaleX({(step.durationMs / maxDuration)});background:{step.passed ? 'var(--accent)' : 'var(--error)'}"
               ></div>
             </div>
           </div>
@@ -189,9 +189,12 @@
   }
 
   .timing-fill {
+    width: 100%;
     height: 100%;
     border-radius: 2px;
-    transition: width var(--dur-normal) ease-out;
+    transform: scaleX(0);
+    transform-origin: left center;
+    transition: transform var(--dur-normal) ease-out;
   }
 
   .timing-val {
@@ -279,6 +282,7 @@
   @media (prefers-reduced-motion: reduce) {
     .timing-fill {
       transition: none;
+      transform: scaleX(1);
     }
   }
 </style>
