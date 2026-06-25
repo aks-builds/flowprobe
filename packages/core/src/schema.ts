@@ -54,7 +54,7 @@ const DbAssertStepSchema = z.object({
   type: z.literal('db-assert'),
   connection: z.string(),
   query: z.string(),
-  params: z.array(z.string()).default([]),
+  params: z.array(z.unknown()).default([]),
   assertions: z.array(AssertionSchema),
   beforeScript: z.string().optional(),
   afterScript: z.string().optional(),

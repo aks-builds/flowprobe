@@ -12,7 +12,7 @@
   import { collectionStore, runStore, validateFlow, type ValidationError } from '$lib/stores/collection.js'
   import { workspaceStore } from '$lib/stores/workspace.js'
   import { historyStore } from '$lib/stores/history.js'
-  import { environmentStore } from '$lib/stores/environments.js'
+  import { environmentStore, activeEnvironment } from '$lib/stores/environments.js'
   import type { Collection } from '@flowprobe/core'
   import { parseCollection } from '@flowprobe/core/schema'
   import type { LogEntry } from '$lib/components/EventStreamDrawer.svelte'
@@ -33,7 +33,10 @@
 
   collectionStore.subscribe(s => { collections = s.collections })
 
-  onMount(() => { historyStore.load() })
+  onMount(() => {
+    historyStore.load()
+    environmentStore.load()
+  })
 
   $: activeCollection = collections.find(c => c.name === $collectionStore.activeCollectionId)
   $: activeFlow = activeCollection?.flows.find(f => f.id === $collectionStore.activeFlowId) ?? activeCollection?.flows[0]
@@ -102,7 +105,7 @@
             flowId: activeFlow.id,
             flowName: activeFlow.name,
             collectionName: activeCollection.name,
-            environment: $environmentStore.activeId,
+            environment: $activeEnvironment?.name ?? null,
             startedAt: runStartedAt ?? new Date().toISOString(),
             durationMs: (event.duration_ms ?? event.durationMs) as number,
             passed: (event.passed) as number,

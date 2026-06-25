@@ -57,7 +57,7 @@ export class FlowRunner extends EventEmitter {
   }
 
   private runScript(script: string, ctx: Record<string, unknown>): void {
-    runInNewContext(script, ctx)
+    runInNewContext(script, ctx, { timeout: 5000 })
   }
 
   async run(collection: Collection, opts: RunOptions): Promise<RunResult> {
