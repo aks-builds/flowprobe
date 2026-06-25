@@ -179,7 +179,7 @@
   }
   .wave.wave-draw {
     stroke-dashoffset: 0;
-    transition: stroke-dashoffset 700ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    transition: stroke-dashoffset var(--dur-crawl) var(--ease-snappy);
   }
   .wave-dot { opacity: 0; transition: opacity var(--dur-normal); }
   .wave-dot.wave-dot-vis { opacity: 1; }
@@ -191,7 +191,7 @@
     -webkit-background-clip: text; -webkit-text-fill-color: transparent;
     background-clip: text;
     opacity: 0; transform: translateY(-10px);
-    transition: opacity 350ms, transform 350ms cubic-bezier(0.175,0.885,0.32,1.275);
+    transition: opacity var(--dur-slow), transform var(--dur-slow) var(--ease-spring);
     margin-bottom: 6px;
   }
   .wordmark.wordmark-vis { opacity: 1; transform: translateY(0); }

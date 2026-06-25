@@ -59,7 +59,7 @@
             <div class="timing-track">
               <div
                 class="timing-fill"
-                style="transform:scaleX({(step.durationMs / maxDuration)});background:{step.passed ? 'var(--accent)' : 'var(--error)'}"
+                style="transform:scaleX({Math.min(1, step.durationMs / maxDuration)});background:{step.passed ? 'var(--accent)' : 'var(--error)'}"
               ></div>
             </div>
           </div>
