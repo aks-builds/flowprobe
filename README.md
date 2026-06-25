@@ -78,7 +78,7 @@ npx flowprobe run ./my-flow.flowprobe.json
 ```
 
 **Desktop app**
-Download the latest `.msi` (Windows), `.dmg` (macOS), or `.AppImage` (Linux) from the
+Download the latest `.exe` (Windows NSIS), `.dmg` (macOS), or `.AppImage` (Linux) from the
 [Releases](https://github.com/aks-builds/flowprobe/releases) page.
 
 ---
