@@ -53,10 +53,17 @@
   --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.1);
   --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
 
-  /* Animation durations */
-  --dur-fast: 150ms;
-  --dur-normal: 200ms;
-  --dur-slow: 300ms;
+  /* ── Motion tokens ── */
+  --dur-instant:  80ms;
+  --dur-fast:     150ms;
+  --dur-normal:   250ms;
+  --dur-slow:     400ms;
+  --dur-crawl:    600ms;
+
+  --ease-spring:  cubic-bezier(0.175, 0.885, 0.32,  1.275);
+  --ease-out:     cubic-bezier(0.0,   0.0,   0.2,   1.0);
+  --ease-in-out:  cubic-bezier(0.4,   0.0,   0.2,   1.0);
+  --ease-snappy:  cubic-bezier(0.25,  0.46,  0.45,  0.94);
 
   /* Sidebar */
   --sidebar-bg: #f4f6f8;
@@ -80,9 +87,11 @@
 
 @media (prefers-reduced-motion: reduce) {
   :root {
-    --dur-fast: 0ms;
-    --dur-normal: 0ms;
-    --dur-slow: 0ms;
+    --dur-instant: 0ms;
+    --dur-fast:    0ms;
+    --dur-normal:  0ms;
+    --dur-slow:    0ms;
+    --dur-crawl:   0ms;
   }
 }
 
