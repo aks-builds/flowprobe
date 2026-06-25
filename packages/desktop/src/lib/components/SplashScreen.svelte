@@ -238,13 +238,15 @@
   .progress.prog-vis { opacity: 1; }
 
   .progress-fill {
-    height: 100%; width: 0%; border-radius: 2px;
+    height: 100%; width: 100%; border-radius: 2px;
     background: linear-gradient(90deg, #6366f1, #a855f7, #06b6d4);
     box-shadow: 0 0 8px rgba(99,102,241,.4);
+    transform: scaleX(0);
+    transform-origin: left center;
+    transition: transform 1400ms linear;
   }
   .progress-fill.fill-anim {
-    width: 100%;
-    transition: width 1400ms linear;
+    transform: scaleX(1);
   }
 
   /* Reduced motion: skip all transitions */
